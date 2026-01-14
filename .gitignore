@@ -1,0 +1,72 @@
+# 💡 Java/Maven/Gradle Defaults
+# Thư mục chứa các file biên dịch và gói ứng dụng
+/target/
+/bin/
+
+# Thư mục build của Gradle và Maven
+build/
+.gradle/
+.mvn/
+pom.xml.tag
+pom.xml.releaseBackup
+pom.xml.versionsBackup
+pom.xml.next
+release.properties
+dependency-check-report.html
+dependency-check-report.xml
+
+# Log files
+*.log
+log/
+log.*
+
+
+application.properties
+
+
+
+
+### IntelliJ IDEA ###
+.idea/
+*.iws
+*.iml
+*.ipr
+
+### Eclipse/STS ###
+.classpath
+.project
+.settings/
+.apt_generated/
+.factorypath
+.springBeans
+.sts4-cache/
+
+### NetBeans ###
+/nbproject/private/
+/nbbuild/
+/dist/
+/nbdist/
+/.nb-gradle/
+build/
+
+### VS Code ###
+.vscode/
+# Bỏ qua chỉ các file VS Code user settings, nhưng giữ lại file settings cho team nếu cần
+!.vscode/settings.json 
+!.vscode/tasks.json 
+!.vscode/launch.json
+!.vscode/extensions.json
+# Bỏ qua user state files
+.vscode/*.code-workspace
+
+# 📦 OS and Misc
+# MacOS
+.DS_Store
+.localized
+# Windows
+Thumbs.db
+
+# 💾 Jar/War files
+*.jar
+*.war
+*.zip
