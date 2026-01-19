@@ -16,6 +16,7 @@ public class AppConstants {
             "/swagger-ui.html",
             "/oauth2/**",
             "/login/oauth2/**",
-            "/ws/**"
+            "/ws/**",
+            "api/products/**"
     };
 }
