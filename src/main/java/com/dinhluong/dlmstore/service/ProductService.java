@@ -19,6 +19,8 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
 
 import java.math.BigDecimal;
+import java.util.List;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -94,4 +96,14 @@ public class ProductService {
 
         return productMapper.toDetailResponse(product);
     }
+
+    public List<ProductDetailResponse> getProductsBySlugs(List<String> slugs) {
+    // Giả sử bạn dùng JPA Repository
+    List<Product> products = productRepository.findBySlugInList(slugs);
+    
+    // Map từ Entity sang DTO
+    return products.stream()
+            .map(productMapper::toDetailResponse)
+            .collect(Collectors.toList());
+}
 }

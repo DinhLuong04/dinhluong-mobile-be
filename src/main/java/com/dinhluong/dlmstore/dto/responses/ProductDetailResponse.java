@@ -17,7 +17,7 @@ public class ProductDetailResponse {
     private String discountNote;       // "Giảm 300.000đ"
     private String installmentText;    // "Trả góp 0%"
     private String description;        // HTML mô tả
-
+    private String thumbnail;
     // --- Ảnh Slider (productImages) ---
     private List<String> productImages;
 
@@ -36,7 +36,6 @@ public class ProductDetailResponse {
 
     // --- Thông tin tĩnh (Promotions & Policies) ---
     private List<String> promotions;
-    private List<PolicyDto> policies;
 
     // ================= INNER CLASSES =================
 
@@ -76,9 +75,5 @@ public class ProductDetailResponse {
         private String value;     // "12-Core"
     }
 
-    @Data
-    public static class PolicyDto {
-        private String icon;
-        private String text;
-    }
+    
 }

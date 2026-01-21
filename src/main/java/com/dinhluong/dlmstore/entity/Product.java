@@ -2,11 +2,14 @@ package com.dinhluong.dlmstore.entity;
 
 import java.math.BigDecimal;
 import java.util.List;
-
+import com.dinhluong.dlmstore.convert.IntegerListConverter;
+import com.dinhluong.dlmstore.convert.JsonNodeConverter;
+import com.dinhluong.dlmstore.convert.StringListConverter;
 import com.dinhluong.dlmstore.entity.Enums.OsType;
 import com.dinhluong.dlmstore.entity.Enums.ProductStatus;
 import com.dinhluong.dlmstore.entity.Enums.ProductType;
 import com.dinhluong.dlmstore.entity.imp.BaseEntity;
+import com.fasterxml.jackson.databind.JsonNode;
 
 import jakarta.persistence.*;
 import lombok.*;
@@ -16,73 +19,87 @@ import lombok.*;
 @Data
 @EqualsAndHashCode(callSuper = true)
 public class Product extends BaseEntity {
-    
-    private String name; // Tên cột DB là 'name' giống nhau nên không cần @Column
-    private String slug; // Tên cột DB là 'slug' giống nhau
-    
-    @Column(name = "description", columnDefinition = "TEXT")
+
+    private String name;
+    private String slug;
+
+    @Column(columnDefinition = "TEXT")
     private String description;
 
-    @Column(name = "display_price") // Ánh xạ sang display_price
+    @Column(name = "display_price")
     private BigDecimal displayPrice;
 
-    @Column(name = "original_price") // Ánh xạ sang original_price
+    @Column(name = "original_price")
     private BigDecimal originalPrice;
 
-    @Column(name = "installment_text") // Ánh xạ sang installment_text
+    @Column(name = "installment_text")
     private String installmentText;
-    
-    @Column(name = "highlight_features", columnDefinition = "TEXT") // Ánh xạ sang highlight_features
-    private String highlightFeatures; 
 
-    @ManyToOne
-    @JoinColumn(name = "brand_id") // Đã có, giữ nguyên
+    @Column(name = "highlight_features", columnDefinition = "TEXT")
+    private String highlightFeatures;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "brand_id")
     private Brand brand;
 
-    @ManyToOne
-    @JoinColumn(name = "category_id") // Đã có, giữ nguyên
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "category_id")
     private Category category;
 
-    @Column(name = "thumbnail_url") // Ánh xạ sang thumbnail_url
+    @Column(name = "thumbnail_url")
     private String thumbnailUrl;
 
     @Enumerated(EnumType.STRING)
-    @Column(name = "product_type") // Ánh xạ sang product_type
+    @Column(name = "product_type")
     private ProductType productType;
 
     @Enumerated(EnumType.STRING)
-    @Column(name = "status") // Tên giống nhau, nhưng thêm cho rõ ràng cũng được
     private ProductStatus status;
 
-    // --- Các cột Filter nhanh (Từ lệnh ALTER TABLE) ---
-    
+    // --- CÁC CỘT LỌC VẬT LÝ (INDEXED COLUMNS) ---
+
     @Enumerated(EnumType.STRING)
-    @Column(name = "os_type") // Sửa lỗi quan trọng ở đây
+    @Column(name = "os_type")
     private OsType osType;
 
-    @Column(name = "screen_size") // Sửa lỗi
+    @Column(name = "screen_size")
     private Double screenSize;
 
-    @Column(name = "screen_resolution_type") // Sửa lỗi
+    @Column(name = "screen_resolution_type")
     private String screenResolutionType;
 
-    @Column(name = "refresh_rate") // Sửa lỗi
+    @Column(name = "refresh_rate")
     private Integer refreshRate;
 
-    @Column(name = "battery_capacity") // Sửa lỗi chính bạn đang gặp
+    @Column(name = "battery_capacity")
     private Integer batteryCapacity;
 
-    @Column(name = "support_5g") // Sửa lỗi
+    @Column(name = "support_5g")
     private Boolean support5g;
+   
 
-    @Column(name = "special_features") // Sửa lỗi
+    @Column(name = "special_features")
     private String specialFeatures;
-    
-    @Column(name = "search_keywords", columnDefinition = "TEXT") // Sửa lỗi
+
+    @Column(name = "search_keywords", columnDefinition = "TEXT")
     private String searchKeywords;
 
-    // --- Quan hệ thành phần (Composition) ---
+    // --- CÁC CỘT JSON (Yêu cầu Hibernate 6 + Jackson) ---
     
+    @Convert(converter = IntegerListConverter.class)
+    @Column(name = "available_rams", columnDefinition = "json")
+    private List<Integer> availableRams; // VD: [4, 8, 12]
+
+    @Convert(converter = StringListConverter.class)
+    @Column(name = "available_roms", columnDefinition = "json")
+    private List<String> availableRoms;// VD: ["128GB", "256GB"] hoặc [128, 256]
+
+    @Convert(converter = JsonNodeConverter.class)
+    @Column(name = "specifications_json", columnDefinition = "json")
+    private JsonNode specificationsJson;// Cache hiển thị chi tiết (Map cấu trúc tự do)
+
+    // --- QUAN HỆ (RELATIONSHIPS) ---
+
     @OneToMany(mappedBy = "product", cascade = CascadeType.ALL, orphanRemoval = true)
     @ToString.Exclude
     private List<ProductImage> images;
@@ -91,9 +108,10 @@ public class Product extends BaseEntity {
     @ToString.Exclude
     private List<ProductVariant> variants;
 
+    // [THAY ĐỔI] Thay thế specGroups cũ bằng product_spec_values mới
     @OneToMany(mappedBy = "product", cascade = CascadeType.ALL, orphanRemoval = true)
     @ToString.Exclude
-    private List<ProductSpecGroup> specGroups;
+    private List<ProductSpecValue> specValues;
 
     @OneToMany(mappedBy = "product", cascade = CascadeType.ALL, orphanRemoval = true)
     @ToString.Exclude

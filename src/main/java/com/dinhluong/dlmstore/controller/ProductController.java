@@ -1,6 +1,7 @@
 package com.dinhluong.dlmstore.controller;
 
 import java.math.BigDecimal;
+import java.util.List;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
@@ -58,5 +59,11 @@ public class ProductController {
         ProductDetailResponse result = productService.getProductBySlug(slug);
         
         return ApiResponse.success("Lấy chi tiết sản phẩm thành công", result);
+    }
+
+    @GetMapping("/batch") 
+    public ApiResponse<List<ProductDetailResponse>> getProductsBySlugs(@RequestParam List<String> slugs) {
+        List<ProductDetailResponse> results = productService.getProductsBySlugs(slugs);
+        return ApiResponse.success("Lấy danh sách sản phẩm thành công", results);
     }
 }
