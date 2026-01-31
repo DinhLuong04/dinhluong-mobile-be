@@ -9,7 +9,7 @@ import lombok.NoArgsConstructor;
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
-public class GoogleLoginRequest {
+public class Oauth2LoginRequest {
     @JsonProperty("id_token")
     private String idToken;
 }

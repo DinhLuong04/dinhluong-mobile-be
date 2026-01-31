@@ -4,7 +4,11 @@ import java.time.LocalDateTime;
 import java.util.Map;
 
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Value;
+// import org.springframework.beans.factory.annotation.Value; // Không cần check aud thủ công nữa
+import org.springframework.http.HttpEntity;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpMethod;
+import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
 
@@ -30,22 +34,21 @@ public class GoogleService {
     @Autowired
     private JwtTokenProvider jwtTokenProvider;
 
-    @Value("${google.client-id}")
-    private String GOOGLE_CLIENT_ID;
-
     @Transactional
-    public LoginResponse googleLogin(String idTokenString) {
+    public LoginResponse googleLogin(String accessToken) { 
 
-        Map<String, Object> payload = verifyGoogleToken(idTokenString);
+        
+        Map<String, Object> payload = getUserInfo(accessToken);
 
+        
         String email = (String) payload.get("email");
         String fullName = (String) payload.get("name");
         String picture = (String) payload.get("picture");
-        String googleId = (String) payload.get("sub");
+        String googleId = (String) payload.get("sub"); 
 
+     
         Users user = userRepository.findByEmail(email)
                 .orElseGet(() -> {
-
                     Roles userRole = roleRepository.findByName("USER")
                             .orElseThrow(() -> new ValidationException("ROLE USER not found"));
 
@@ -76,21 +79,31 @@ public class GoogleService {
         );
     }
 
-    @SuppressWarnings("unchecked")
-    private Map<String, Object> verifyGoogleToken(String idToken) {
+
+    private Map<String, Object> getUserInfo(String accessToken) {
         try {
             RestTemplate restTemplate = new RestTemplate();
-            String url = "https://oauth2.googleapis.com/tokeninfo?id_token=" + idToken;
+            
+          
+            String url = "https://www.googleapis.com/oauth2/v3/userinfo";
 
-            Map<String, Object> response = restTemplate.getForObject(url, Map.class);
+            
+            HttpHeaders headers = new HttpHeaders();
+            headers.setBearerAuth(accessToken);
+            HttpEntity<String> entity = new HttpEntity<>(headers);
 
-            if (response == null || !GOOGLE_CLIENT_ID.equals(response.get("aud"))) {
-                throw new ValidationException("Invalid Google token or audience");
-            }
+            ResponseEntity<Map> response = restTemplate.exchange(
+                url, 
+                HttpMethod.GET, 
+                entity, 
+                Map.class
+            );
 
-            return response;
+            return response.getBody();
+
         } catch (Exception e) {
-            throw new ValidationException("Invalid Google token");
+            e.printStackTrace(); 
+            throw new ValidationException("Invalid Google Access Token");
         }
     }
 }

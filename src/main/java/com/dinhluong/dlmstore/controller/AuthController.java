@@ -1,13 +1,14 @@
 package com.dinhluong.dlmstore.controller;
 
 import com.dinhluong.dlmstore.dto.ApiResponse;
-import com.dinhluong.dlmstore.dto.requests.GoogleLoginRequest;
 import com.dinhluong.dlmstore.dto.requests.LoginRequest;
+import com.dinhluong.dlmstore.dto.requests.Oauth2LoginRequest;
 import com.dinhluong.dlmstore.dto.requests.RegisterRequest;
 import com.dinhluong.dlmstore.dto.responses.LoginResponse;
 import com.dinhluong.dlmstore.entity.Users;
 import com.dinhluong.dlmstore.repository.UserRepository;
 import com.dinhluong.dlmstore.service.AuthService;
+import com.dinhluong.dlmstore.service.FacebookService;
 import com.dinhluong.dlmstore.service.GoogleService;
 import com.dinhluong.dlmstore.utils.JwtTokenProvider;
 import com.google.api.client.googleapis.auth.oauth2.GoogleIdToken;
@@ -41,7 +42,9 @@ public class AuthController {
     private  AuthService authService;
     @Autowired
     private GoogleService googleService;
-   
+    @Autowired
+    private FacebookService facebookService;
+
    @PostMapping("/login")
     public ApiResponse<LoginResponse> login(@Valid @RequestBody LoginRequest request) {
 
@@ -125,7 +128,7 @@ public class AuthController {
 
     
     @PostMapping("/google-login")
-    public ResponseEntity<?> googleLogin(@RequestBody GoogleLoginRequest request) {
+    public ResponseEntity<?> googleLogin(@RequestBody Oauth2LoginRequest request) {
         String idToken =request.getIdToken();
 
         if (idToken == null || idToken.isBlank()) {
@@ -135,6 +138,21 @@ public class AuthController {
         try {
             Object response = googleService.googleLogin(idToken);
             return ResponseEntity.ok(response);
+        } catch (Exception e) {
+            return ResponseEntity.status(401).body(Map.of("error", e.getMessage()));
+        }
+    }
+
+    @PostMapping("/facebook-login")
+    public ResponseEntity<?> facebookLogin(@RequestBody Oauth2LoginRequest request) {
+        String accessToken = request.getIdToken();
+        if (accessToken == null || accessToken.isBlank()) {
+            return ResponseEntity.badRequest().body(Map.of("error", "Missing access_token"));
+        }
+        try {
+           
+            Object response = facebookService.facebookLogin(accessToken);
+            return ResponseEntity.ok(response);  
         } catch (Exception e) {
             return ResponseEntity.status(401).body(Map.of("error", e.getMessage()));
         }
