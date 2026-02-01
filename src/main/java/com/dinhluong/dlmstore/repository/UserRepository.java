@@ -18,6 +18,8 @@ public interface UserRepository extends JpaRepository<Users, Long> {
     // Check tồn tại email (register)
     boolean existsByEmail(String email);
 
+    Optional<Users> findByVerificationCode(String verificationCode);
+
     // Login kèm role (tránh LazyInitializationException)
     @Query("""
         SELECT u FROM Users u

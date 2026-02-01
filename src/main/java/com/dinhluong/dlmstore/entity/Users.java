@@ -38,4 +38,12 @@ public class Users {
     private LocalDateTime createdAt;
     @Column(name = "updated_at")
     private LocalDateTime updatedAt;
+    @Column(name = "verification_code")
+    private String verificationCode; 
+
+    @Column(name = "reset_password_token")
+    private String resetPasswordToken; 
+
+    @Column(name = "token_expiry_date")
+    private LocalDateTime tokenExpiryDate;
 }

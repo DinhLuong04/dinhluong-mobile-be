@@ -15,16 +15,15 @@ import com.google.api.client.googleapis.auth.oauth2.GoogleIdToken;
 import com.google.api.client.googleapis.auth.oauth2.GoogleIdTokenVerifier;
 import com.google.api.client.http.javanet.NetHttpTransport;
 
-
-
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 
+import java.net.URI;
 import java.nio.file.attribute.UserPrincipal;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
-
+import org.springframework.http.HttpStatus;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -35,17 +34,17 @@ import org.springframework.web.bind.annotation.*;
 @RestController
 @RequestMapping("/api/auth")
 public class AuthController {
-  
+
     @Autowired
-    private  JwtTokenProvider tokenProvider;
+    private JwtTokenProvider tokenProvider;
     @Autowired
-    private  AuthService authService;
+    private AuthService authService;
     @Autowired
     private GoogleService googleService;
     @Autowired
     private FacebookService facebookService;
 
-   @PostMapping("/login")
+    @PostMapping("/login")
     public ApiResponse<LoginResponse> login(@Valid @RequestBody LoginRequest request) {
 
         Users user = authService.Login(request.getEmail(), request.getPassword());
@@ -64,72 +63,67 @@ public class AuthController {
                         user.getEmail(),
                         user.getFullName(),
                         user.getAvatarUrl(),
-                        accountType
-                )
-        );
+                        accountType));
     }
 
-    
     @PostMapping("/register")
-    public ApiResponse<?> register(@Valid @RequestBody RegisterRequest request) {
+    public ApiResponse<?> register(@RequestBody RegisterRequest request) {
         authService.register(request);
-        return ApiResponse.success("Đăng ký thành công! Vui lòng kiểm tra email xác thực tài khoản.", null);
+        return ApiResponse.success("Đăng ký thành công! Vui lòng kiểm tra email để kích hoạt.", null);
     }
 
- 
-    // @PostMapping("/verify-otp")
-    // public ApiResponse<String> verifyOtp(@Valid @RequestBody VerifyOtpRequest request) {
-    //     authService.verifyRegistrationOtp(request); 
-    //     return ApiResponse.success("Xác thực OTP thành công! Bạn có thể đăng nhập ngay.", null);
-    // }
+    @GetMapping("/verify")
+    public ResponseEntity<?> verifyEmail(@RequestParam("code") String code) {
+        try {
+            authService.verifyEmail(code);
+            return ResponseEntity.status(HttpStatus.FOUND)
+                    .location(URI.create("https://localhost:5173/login?verified=true"))
+                    .build();
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.FOUND)
+                    .location(URI.create("https://localhost:5173/login?verified=false&error=" + e.getMessage()))
+                    .build();
+        }
+    }
 
- 
-    // @PostMapping("/resend-otp")
-    // public ApiResponse<String> resendOtp(@Valid @RequestBody ResendOtpRequest request) {
-    //     User user = userRepository.findByEmail(request.getEmail())
-    //             .orElseThrow(() -> new ValidationException("Không tìm thấy tài khoản với email này"));
+    @PostMapping("/resend-verification")
+    public ResponseEntity<?> resendVerification(@RequestParam String email) {
+        try {
+            authService.resendVerificationCode(email);
+            return ResponseEntity.ok("Đã gửi lại email xác thực.");
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(e.getMessage());
+        }
+    }
 
-    //     if (user.getStatus() == User.Status.ACTIVE) {
-    //         throw new ValidationException("Tài khoản đã được kích hoạt rồi!");
-    //     }
+    @PostMapping("/forgot-password")
+    public ResponseEntity<?> forgotPassword(@RequestParam String email) {
+        try {
+            authService.forgotPassword(email);
+            return ResponseEntity.ok(Collections.singletonMap("message", "Mã OTP đã được gửi đến email của bạn."));
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(Collections.singletonMap("message", e.getMessage()));
+        }
+    }
 
-    //     authService.resendRegistrationOtp(user);
+    @PostMapping("/reset-password")
+    public ResponseEntity<?> resetPassword(@RequestBody Map<String, String> request) {
+        try {
+            String email = request.get("email");
+            String otp = request.get("otp");
+            String newPassword = request.get("newPassword");
 
-    //     return ApiResponse.success("Mã OTP mới đã được gửi đến email của bạn.", null);
-    // }
+            authService.resetPassword(email, otp, newPassword);
+            return ResponseEntity
+                    .ok(Collections.singletonMap("message", "Đổi mật khẩu thành công! Hãy đăng nhập lại."));
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(Collections.singletonMap("message", e.getMessage()));
+        }
+    }
 
-
-    // @PostMapping("/forgot-password")
-    // public ApiResponse<String> forgotPassword(@Valid @RequestBody ForgotPasswordRequest request) {
-    //     authService.forgotPassword(request);
-    //     return ApiResponse.success("OTP đã được gửi tới email của bạn.", null);
-    // }
-
-   
-    // @PostMapping("/forgot-password/verify-otp")
-    // public ApiResponse<String> verifyOtp(@Valid @RequestBody VerifyForgotPasswordOtpRequest request) {
-    //     authService.verifyForgotPasswordOtp(request);
-    //     return ApiResponse.success("OTP hợp lệ. Bạn có thể đặt mật khẩu mới.", null);
-    // }
-
-
-    // @PostMapping("/forgot-password/reset")
-    // public ApiResponse<String> resetPassword(@Valid @RequestBody ResetPasswordRequest request) {
-    //     authService.resetPassword(request);
-    //     return ApiResponse.success("Đặt lại mật khẩu thành công!", null);
-    // }
-
-  
-    // @PostMapping("/forgot-password/resend-otp")
-    // public ApiResponse<?> resendOtp(@Valid @RequestBody ResendForgotPasswordOtpRequest request) {
-    //     authService.resendForgotPasswordOtp(request.getEmail());
-    //     return ApiResponse.success("Mã OTP mới đã được gửi tới email của bạn.", null);
-    // }
-
-    
     @PostMapping("/google-login")
     public ResponseEntity<?> googleLogin(@RequestBody Oauth2LoginRequest request) {
-        String idToken =request.getIdToken();
+        String idToken = request.getIdToken();
 
         if (idToken == null || idToken.isBlank()) {
             return ResponseEntity.badRequest().body(Map.of("error", "Missing id_token"));
@@ -150,13 +144,12 @@ public class AuthController {
             return ResponseEntity.badRequest().body(Map.of("error", "Missing access_token"));
         }
         try {
-           
+
             Object response = facebookService.facebookLogin(accessToken);
-            return ResponseEntity.ok(response);  
+            return ResponseEntity.ok(response);
         } catch (Exception e) {
             return ResponseEntity.status(401).body(Map.of("error", e.getMessage()));
         }
     }
 
 }
-
