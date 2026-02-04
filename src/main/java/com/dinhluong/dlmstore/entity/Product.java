@@ -86,9 +86,9 @@ public class Product extends BaseEntity {
 
     // --- CÁC CỘT JSON (Yêu cầu Hibernate 6 + Jackson) ---
     
-    @Convert(converter = IntegerListConverter.class)
+    @Convert(converter = StringListConverter.class) 
     @Column(name = "available_rams", columnDefinition = "json")
-    private List<Integer> availableRams; // VD: [4, 8, 12]
+    private List<String> availableRams; // Để lưu được ["8 GB", "12 GB"]
 
     @Convert(converter = StringListConverter.class)
     @Column(name = "available_roms", columnDefinition = "json")

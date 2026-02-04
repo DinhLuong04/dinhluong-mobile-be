@@ -8,7 +8,8 @@ import java.util.List;
 
 @Data
 public class ProductCardResponse {
-    private String id;              // Map từ 'slug' (VD: iphone-17-pro-max)
+    private Long id;
+    private String slug;              // Map từ 'slug' (VD: iphone-17-pro-max)
     private String name;            // VD: iPhone 17 Pro Max
     private String image;           // Map từ 'thumbnailUrl'
     private BigDecimal price;       // Map từ 'displayPrice'

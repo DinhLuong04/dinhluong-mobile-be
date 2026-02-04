@@ -18,35 +18,63 @@ import com.dinhluong.dlmstore.dto.responses.ProductCardResponse;
 import com.dinhluong.dlmstore.dto.responses.ProductDetailResponse;
 import com.dinhluong.dlmstore.service.ProductService;
 import org.springframework.data.domain.Pageable;
+
 @RestController
 @RequestMapping("/api/products")
 public class ProductController {
     @Autowired
-    private  ProductService productService;
+    private ProductService productService;
+
     @GetMapping
     public ApiResponse<Page<ProductCardResponse>> getProducts(
-            @RequestParam(required = false) String brand,
-            @RequestParam(required = false) String os,
+            // 1. Tìm kiếm & Cơ bản
+            @RequestParam(required = false) String search,
+
+            // 2. Bộ lọc danh sách (Multi-select Checkbox) -> Dùng List<String>
+            @RequestParam(required = false) List<String> brands, // VD: ?brands=Samsung&brands=Oppo
+            @RequestParam(required = false) List<String> os, // VD: ?os=Android
+            @RequestParam(required = false) List<String> roms, // VD: ?roms=128 GB
+            @RequestParam(required = false) List<String> rams, // VD: ?rams=8 GB
+            @RequestParam(required = false) List<String> networks, // VD: ?networks=5G
+
+            // 3. Bộ lọc khoảng (Ranges)
             @RequestParam(required = false) BigDecimal minPrice,
             @RequestParam(required = false) BigDecimal maxPrice,
-            @RequestParam(required = false) String search,
+            @RequestParam(required = false) Integer minBattery,
+            @RequestParam(required = false) Integer maxBattery,     // <-- THÊM MỚI
+            @RequestParam(required = false) Double minScreenSize,
+            @RequestParam(required = false) Double maxScreenSize,   // <-- THÊM MỚI
+            @RequestParam(required = false) Integer minRefreshRate,
+            @RequestParam(required = false) Integer maxRefreshRate, // <-- THÊM MỚI (Cho range nếu cần)
+            // 4. Phân trang & Sắp xếp
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "10") int size,
-            @RequestParam(defaultValue = "createdAt,desc") String[] sort
-    ) {
+            @RequestParam(defaultValue = "createdAt,desc") String[] sort) {
         // Xử lý Sort
         Sort.Direction direction = Sort.Direction.DESC;
         if (sort.length > 1 && sort[1].equalsIgnoreCase("asc")) {
             direction = Sort.Direction.ASC;
         }
+
+        // Lưu ý: sort[0] phải khớp với tên biến trong Entity (ví dụ: displayPrice thay
+        // vì display_price)
         Pageable pageable = PageRequest.of(page, size, Sort.by(direction, sort[0]));
 
-        // Gọi Service
+        // Gọi Service với đầy đủ tham số mới
         Page<ProductCardResponse> result = productService.getAllProducts(
-                brand, os, minPrice, maxPrice, search, pageable
-        );
+                brands,
+                os,
+                roms,
+                rams,
+                networks,
+                minPrice,
+                maxPrice,
+                minBattery, maxBattery,         
+                minScreenSize, maxScreenSize,   
+                minRefreshRate, maxRefreshRate, 
+                search,
+                pageable);
 
-        // Trả về format chuẩn
         return ApiResponse.success("Lấy danh sách sản phẩm thành công", result);
     }
 
@@ -57,13 +85,19 @@ public class ProductController {
     @GetMapping("/{slug}")
     public ApiResponse<ProductDetailResponse> getProductDetail(@PathVariable String slug) {
         ProductDetailResponse result = productService.getProductBySlug(slug);
-        
+
         return ApiResponse.success("Lấy chi tiết sản phẩm thành công", result);
     }
 
-    @GetMapping("/batch") 
+    @GetMapping("/batch")
     public ApiResponse<List<ProductDetailResponse>> getProductsBySlugs(@RequestParam List<String> slugs) {
         List<ProductDetailResponse> results = productService.getProductsBySlugs(slugs);
         return ApiResponse.success("Lấy danh sách sản phẩm thành công", results);
+    }
+
+    @GetMapping("/update-keywordSearch")
+    public ApiResponse<?> UpdateKeyWordSeacrh() {
+        productService.updateAllProductKeywords();
+        return ApiResponse.success("Cập nhật thành công danh sách sản phẩm thành công", null);
     }
 }

@@ -26,7 +26,7 @@ public class FacebookService {
     private RoleRepository roleRepository;
     @Autowired
     private JwtTokenProvider jwtTokenProvider;
-
+    
    @Transactional
     public LoginResponse facebookLogin(String accessToken) {
        

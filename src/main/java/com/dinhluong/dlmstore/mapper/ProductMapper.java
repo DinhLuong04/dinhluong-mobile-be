@@ -29,7 +29,8 @@ public abstract class ProductMapper {
     // ====================================================
     // 1. MAPPING CHO CARD (DANH SÁCH)
     // ====================================================
-    @Mapping(source = "slug", target = "id")
+    @Mapping(source="id", target="id")
+    @Mapping(source = "slug", target = "slug")
     @Mapping(source = "thumbnailUrl", target = "image")
     @Mapping(source = "displayPrice", target = "price")
     @Mapping(source = "highlightSpecs", target = "specs")

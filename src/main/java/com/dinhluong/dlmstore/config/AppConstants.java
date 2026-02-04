@@ -17,6 +17,7 @@ public class AppConstants {
             "/oauth2/**",
             "/login/oauth2/**",
             "/ws/**",
-            "api/products/**"
+            "api/products/**",
+            "api/chatbot"
     };
 }
