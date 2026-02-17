@@ -15,7 +15,9 @@ import org.springframework.web.bind.annotation.RestController;
 
 import com.dinhluong.dlmstore.dto.ApiResponse;
 import com.dinhluong.dlmstore.dto.responses.ProductCardResponse;
+import com.dinhluong.dlmstore.dto.responses.ProductComboDto;
 import com.dinhluong.dlmstore.dto.responses.ProductDetailResponse;
+import com.dinhluong.dlmstore.service.ProductComboService;
 import com.dinhluong.dlmstore.service.ProductService;
 import org.springframework.data.domain.Pageable;
 
@@ -24,7 +26,8 @@ import org.springframework.data.domain.Pageable;
 public class ProductController {
     @Autowired
     private ProductService productService;
-
+    @Autowired
+    private ProductComboService comboService;
     @GetMapping
     public ApiResponse<Page<ProductCardResponse>> getProducts(
             // 1. Tìm kiếm & Cơ bản
@@ -88,6 +91,13 @@ public class ProductController {
 
         return ApiResponse.success("Lấy chi tiết sản phẩm thành công", result);
     }
+
+    @GetMapping("/{slug}/combos")
+    public ApiResponse<List<ProductComboDto>> getProductCombo(@PathVariable String slug) {
+        List<ProductComboDto> result = comboService.getCombosBySlug(slug);
+        return ApiResponse.success("Danh sách combo đi kèm", result);
+    }
+
 
     @GetMapping("/batch")
     public ApiResponse<List<ProductDetailResponse>> getProductsBySlugs(@RequestParam List<String> slugs) {

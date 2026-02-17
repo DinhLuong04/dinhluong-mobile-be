@@ -123,7 +123,7 @@ public class ChatbotService {
 
         // GỌI AI: Truyền thêm Intent để chọn Style trả lời
         AiFilterResponse aiResult = generateSmartResponse(userMessage, contextForAi, criteria.getIntent());
-
+        System.out.println("AI Result: " + aiResult);
         //  LỌC DANH SÁCH UI
         List<ChatProductDto> finalUiList = new ArrayList<>();
         if (aiResult.getProductIds() != null && !aiResult.getProductIds().isEmpty()) {
@@ -261,7 +261,7 @@ public class ChatbotService {
                    - "CHAT": Chào hỏi, xã giao.
 
                 2. TRÍCH XUẤT FILTER:
-                   - targetProductName: Tên máy cụ thể (Nếu intent là DETAIL hoặc COMPARE).
+                   - targetProductName: Tên máy cụ thể (Nếu intent là DETAIL hoặc COMPARE) ví dụ : 2 sản phẩm thì như này "Xiaomi 15T, iPhone 17".
                    - searchKeyword: Từ khóa tìm kiếm chung.
                    - brands: ["Xiaomi", "Apple", "Samsung"...]
                    - minPrice / maxPrice: Khoảng giá khách tìm.

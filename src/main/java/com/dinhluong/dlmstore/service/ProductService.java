@@ -1,6 +1,7 @@
 package com.dinhluong.dlmstore.service;
 
 import com.dinhluong.dlmstore.dto.responses.ProductCardResponse;
+
 import com.dinhluong.dlmstore.dto.responses.ProductDetailResponse;
 import com.dinhluong.dlmstore.entity.Product;
 import com.dinhluong.dlmstore.entity.ProductVariant;
@@ -36,14 +37,13 @@ public class ProductService {
     @Autowired
     private final ProductMapper productMapper;
 
-
     @Transactional(readOnly = true)
     public Page<ProductCardResponse> getAllProducts(
-            List<String> brands, 
+            List<String> brands,
             List<String> osTypes,
-            List<String> roms, 
-            List<String> rams, 
-            List<String> networks, 
+            List<String> roms,
+            List<String> rams,
+            List<String> networks,
             BigDecimal minPrice,
             BigDecimal maxPrice,
             Integer minBattery, Integer maxBattery,
@@ -120,18 +120,17 @@ public class ProductService {
             spec = spec.and((root, query, cb) -> cb.lessThanOrEqualTo(root.get("batteryCapacity"), maxBattery));
         }
 
-    
         if (minScreenSize != null) {
             spec = spec.and((root, query, cb) -> cb.greaterThanOrEqualTo(root.get("screenSize"), minScreenSize));
         }
-        if (maxScreenSize != null) { 
+        if (maxScreenSize != null) {
             spec = spec.and((root, query, cb) -> cb.lessThanOrEqualTo(root.get("screenSize"), maxScreenSize));
         }
 
         if (minRefreshRate != null) {
             spec = spec.and((root, query, cb) -> cb.greaterThanOrEqualTo(root.get("refreshRate"), minRefreshRate));
         }
-        if (maxRefreshRate != null) { 
+        if (maxRefreshRate != null) {
             spec = spec.and((root, query, cb) -> cb.lessThanOrEqualTo(root.get("refreshRate"), maxRefreshRate));
         }
 
@@ -154,18 +153,16 @@ public class ProductService {
                 .collect(Collectors.toList());
     }
 
-    
     // TẠO TỪ KHÓA TÌM KIẾM (SEARCH KEYWORDS GENERATOR)
 
     public String generateSearchKeywords(Product product) {
-       
+
         Set<String> keywords = new HashSet<>();
 
-       
         String nameUnsigned = StringUtils.unAccent(product.getName());
 
-        keywords.add(product.getName()); 
-        keywords.add(nameUnsigned); 
+        keywords.add(product.getName());
+        keywords.add(nameUnsigned);
         keywords.add(product.getSlug().replace("-", " "));
 
         String brandName = "";
@@ -255,7 +252,7 @@ public class ProductService {
         if (fullSpecs.contains("gaming") || fullSpecs.contains("game"))
             keywords.add("gaming choi game");
 
-        //  LOGIC THEO HÃNG 
+        // LOGIC THEO HÃNG
         switch (brandName) {
             case "iphone":
             case "apple":
@@ -334,7 +331,7 @@ public class ProductService {
                 break;
         }
 
-        //  PHÂN KHÚC GIÁ
+        // PHÂN KHÚC GIÁ
         if (product.getDisplayPrice() != null) {
             double price = product.getDisplayPrice().doubleValue();
             if (price < 3000000) {
@@ -349,8 +346,7 @@ public class ProductService {
         return String.join(" ", keywords).toLowerCase().trim();
     }
 
-   
-    //  BATCH JOB - CẬP NHẬT KEYWORD HÀNG LOẠT
+    // BATCH JOB - CẬP NHẬT KEYWORD HÀNG LOẠT
 
     @Transactional
     public void updateAllProductKeywords() {
@@ -372,4 +368,7 @@ public class ProductService {
         productRepository.saveAll(products);
         System.out.println("✅ [AUTO-JOB] SUCCESS! Updated " + count + " products.");
     }
+
+
+    
 }
