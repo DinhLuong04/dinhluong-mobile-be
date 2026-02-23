@@ -44,10 +44,15 @@ public class Voucher {
         PERCENT, FIXED
     }
     
-    // Hàm helper kiểm tra xem đơn hàng có đủ điều kiện áp dụng voucher không
-    public boolean isValid(BigDecimal orderAmount) {
-        return LocalDateTime.now().isBefore(expiryDate) 
-            && usedCount < usageLimit 
-            && orderAmount.compareTo(minOrderAmount) >= 0;
-    }
+    // 1. Dùng khi user bấm "Thu thập"
+public boolean isCollectable() {
+    return LocalDateTime.now().isBefore(expiryDate) 
+        && usedCount < usageLimit;
+}
+
+// 2. Dùng khi user áp dụng mã ở màn Checkout
+public boolean isApplicable(BigDecimal orderAmount) {
+    return isCollectable() 
+        && (minOrderAmount == null || orderAmount.compareTo(minOrderAmount) >= 0);
+}
 }

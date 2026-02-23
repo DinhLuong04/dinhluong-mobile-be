@@ -21,4 +21,9 @@ public interface VoucherRepository extends JpaRepository<Voucher, Long> {
     
     // Thêm hàm này để sau này check lúc submit Order
     Voucher findByCode(String code);
+
+   @Query("SELECT v FROM Voucher v WHERE v.expiryDate > CURRENT_TIMESTAMP " +
+           "AND v.usedCount < v.usageLimit " +
+           "AND v.id NOT IN (SELECT uv.voucher.id FROM UserVoucher uv WHERE uv.userId = :userId)")
+    List<Voucher> findAvailableVouchersForUser(@Param("userId") Long userId);
 }

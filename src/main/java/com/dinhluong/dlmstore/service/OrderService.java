@@ -10,18 +10,21 @@ import com.dinhluong.dlmstore.entity.OrderItem;
 import com.dinhluong.dlmstore.entity.Payment;
 import com.dinhluong.dlmstore.entity.Product;
 import com.dinhluong.dlmstore.entity.ProductVariant;
+import com.dinhluong.dlmstore.entity.UserVoucher;
 import com.dinhluong.dlmstore.entity.Voucher;
 import com.dinhluong.dlmstore.repository.OrderItemRepository;
 import com.dinhluong.dlmstore.repository.OrderRepository;
 import com.dinhluong.dlmstore.repository.PaymentRepository;
 import com.dinhluong.dlmstore.repository.ProductRepository;
 import com.dinhluong.dlmstore.repository.ProductVariantRepository;
+import com.dinhluong.dlmstore.repository.UserVoucherRepository;
 import com.dinhluong.dlmstore.repository.VoucherRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -34,6 +37,7 @@ public class OrderService {
     private final OrderItemRepository orderItemRepository;
     private final ProductVariantRepository productVariantRepository;
     private final VoucherRepository voucherRepository;
+    private final UserVoucherRepository userVoucherRepository;
     private final PaymentRepository paymentRepository;
     private final ProductRepository productRepository;
     @Transactional
@@ -55,7 +59,6 @@ public class OrderService {
         // 2. Xử lý từng Item
         for (PlaceOrderItemRequest itemDTO : request.getItems()) {
 
-            // --- KIỂM TRA NULL TRƯỚC KHI TRUY VẤN ---
             if (itemDTO.getVariantId() == null) {
                 throw new RuntimeException("Lỗi: variantId không được để trống!");
             }
@@ -64,23 +67,18 @@ public class OrderService {
                     .orElseThrow(() -> new RuntimeException(
                             "Không tìm thấy sản phẩm variant có ID: " + itemDTO.getVariantId()));
 
-            // Cộng tiền sản phẩm chính vào tổng
             totalAmount = totalAmount.add(
                     mainVariant.getPrice().multiply(new BigDecimal(itemDTO.getQuantity())));
 
-            // 🔥 TẠO DANH SÁCH LƯU COMBO ITEMS
             List<ComboItemDetail> comboDetails = new ArrayList<>();
 
-            // --- XỬ LÝ COMBO ---
             if (itemDTO.getComboIds() != null && !itemDTO.getComboIds().isEmpty()) {
                 for (Long comboId : itemDTO.getComboIds()) {
-                    if (comboId == null)
-                        continue;
+                    if (comboId == null) continue;
 
                     Product comboVariant = productRepository.findById(comboId)
                             .orElseThrow(() -> new RuntimeException("Không tìm thấy sản phẩm combo có ID: " + comboId));
 
-                    // Thêm thông tin vào mảng comboDetails thay vì tạo OrderItem mới
                     ComboItemDetail detail = new ComboItemDetail();
                     detail.setVariantId(comboVariant.getId());
                     detail.setPrice(comboVariant.getDisplayPrice());
@@ -88,47 +86,70 @@ public class OrderService {
                     detail.setImageUrl(comboVariant.getThumbnailUrl());
                     comboDetails.add(detail);
 
-                    // Cộng tiền combo vào tổng tiền đơn hàng
                     totalAmount = totalAmount.add(
                             comboVariant.getDisplayPrice().multiply(new BigDecimal(itemDTO.getQuantity())));
                 }
             }
 
-            // 🔥 TẠO VÀ LƯU ORDER ITEM CHÍNH (Đã bao gồm mảng combo_items)
             OrderItem mainItem = OrderItem.builder()
                     .orderId(order.getId())
                     .productVariantId(mainVariant.getId())
                     .quantity(itemDTO.getQuantity())
                     .priceAtPurchase(mainVariant.getPrice())
-                    .comboItems(comboDetails) // Lưu mảng JSON vào thẳng DB
+                    .comboItems(comboDetails)
                     .build();
 
             orderItemRepository.save(mainItem);
         }
 
-        // 3. Xử lý Voucher
+        // 3. Xử lý Voucher (🔥 Đã cập nhật)
         BigDecimal finalPrice = totalAmount;
         if (request.getVoucherCode() != null && !request.getVoucherCode().trim().isEmpty()) {
+            
+            // 3.1. Tìm Voucher gốc
             Voucher voucher = voucherRepository.findByCode(request.getVoucherCode());
-
-            if (voucher != null && voucher.isValid(totalAmount)) {
-                BigDecimal discountValue = BigDecimal.ZERO;
-                if (voucher.getDiscountType() == Voucher.DiscountType.FIXED) {
-                    discountValue = voucher.getDiscount();
-                } else if (voucher.getDiscountType() == Voucher.DiscountType.PERCENT) {
-                    discountValue = totalAmount.multiply(voucher.getDiscount()).divide(new BigDecimal("100"));
-                }
-
-                if (discountValue.compareTo(totalAmount) > 0) {
-                    discountValue = totalAmount;
-                }
-
-                finalPrice = totalAmount.subtract(discountValue);
-
-                voucher.setUsedCount(voucher.getUsedCount() + 1);
-                voucherRepository.save(voucher);
-                order.setVoucherId(voucher.getId());
+            if (voucher == null) {
+                throw new RuntimeException("Mã giảm giá không tồn tại!");
             }
+
+            // 3.2. Kiểm tra xem User đã thu thập voucher này vào ví chưa và còn dùng được không
+            UserVoucher userVoucher = userVoucherRepository.findByUserIdAndVoucherId(request.getUserId(), voucher.getId())
+                    .orElseThrow(() -> new RuntimeException("Bạn chưa thu thập mã giảm giá này!"));
+
+            if (userVoucher.getIsUsed() != null && userVoucher.getIsUsed()) {
+                throw new RuntimeException("Mã giảm giá này đã được sử dụng!");
+            }
+
+            // 3.3. Kiểm tra điều kiện (HSD, Giá trị tối thiểu)
+            if (!voucher.isApplicable(totalAmount)) {
+                throw new RuntimeException("Đơn hàng không đủ điều kiện áp dụng mã giảm giá này!");
+            }
+
+            // 3.4. Tính toán tiền giảm
+            BigDecimal discountValue = BigDecimal.ZERO;
+            if (voucher.getDiscountType() == Voucher.DiscountType.FIXED) {
+                discountValue = voucher.getDiscount();
+            } else if (voucher.getDiscountType() == Voucher.DiscountType.PERCENT) {
+                discountValue = totalAmount.multiply(voucher.getDiscount()).divide(new BigDecimal("100"));
+            }
+
+            if (discountValue.compareTo(totalAmount) > 0) {
+                discountValue = totalAmount;
+            }
+
+            finalPrice = totalAmount.subtract(discountValue);
+
+            // 3.5. Đánh dấu User đã sử dụng Voucher này (Xóa khỏi danh sách khả dụng của họ)
+            userVoucher.setIsUsed(true);
+            userVoucher.setUsedAt(LocalDateTime.now());
+            userVoucherRepository.save(userVoucher);
+
+            // 3.6. Tăng lượt sử dụng chung của Voucher
+            voucher.setUsedCount(voucher.getUsedCount() + 1);
+            voucherRepository.save(voucher);
+            
+            // 3.7. Lưu Voucher ID vào đơn hàng
+            order.setVoucherId(voucher.getId());
         }
 
         // 4. Cập nhật lại giá cuối cùng

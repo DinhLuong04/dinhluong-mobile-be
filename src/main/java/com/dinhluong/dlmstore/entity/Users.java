@@ -2,7 +2,9 @@ package com.dinhluong.dlmstore.entity;
 import lombok.*;
 
 import java.time.LocalDateTime;
+import java.util.List;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.google.api.client.util.DateTime;
 
 import jakarta.persistence.*;
@@ -46,4 +48,8 @@ public class Users {
 
     @Column(name = "token_expiry_date")
     private LocalDateTime tokenExpiryDate;
+
+    @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true)
+    @JsonIgnore // Tránh lỗi infinite recursion khi parse JSON
+    private List<Address> addresses;
 }

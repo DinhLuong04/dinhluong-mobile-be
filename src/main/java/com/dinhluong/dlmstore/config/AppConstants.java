@@ -6,6 +6,9 @@ public class AppConstants {
         "/api/cart/**",
         "/api/vouchers/**",
         "/api/orders/**",
+        "/api/profile/**",
+        "/api/addresses/**",
+        
     };
     public static final String[] ADMIN_APIS = {
             "/api/admin/**"
