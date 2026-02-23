@@ -20,7 +20,8 @@ public class CartResponse {
     @Data
     public static class CartItemDto {
         // --- Thông tin định danh ---
-        private Long id;              // ID của bảng cart_items (cartItemId)
+        private Long id; 
+        private Long productVariantId;             // ID của bảng cart_items (cartItemId)
         private String sku;           // Mã SKU của biến thể
 
         // --- Thông tin hiển thị ---

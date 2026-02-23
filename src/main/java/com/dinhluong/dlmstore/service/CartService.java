@@ -42,156 +42,155 @@ public class CartService {
     // =========================================================================
     // 1. THÊM VÀO GIỎ HÀNG
     // =========================================================================
-   @Transactional
-public void addToCart(Long userId, AddToCartRequest request) {
+    @Transactional
+    public void addToCart(Long userId, AddToCartRequest request) {
 
-    // 1. Lấy hoặc tạo cart
-    Cart cart = cartRepository.findByUserId(userId)
-            .orElseGet(() -> cartRepository.save(new Cart(userId)));
+        // 1. Lấy hoặc tạo cart
+        Cart cart = cartRepository.findByUserId(userId)
+                .orElseGet(() -> cartRepository.save(new Cart(userId)));
 
-    int addQty = request.getQuantity() != null ? request.getQuantity() : 1;
+        int addQty = request.getQuantity() != null ? request.getQuantity() : 1;
 
-    // 2. Kiểm tra SP chính đã tồn tại chưa
-    CartItem mainItem = cartItemRepository
-            .findByCartIdAndProductVariantIdAndParentIdIsNull(
-                    cart.getId(),
-                    request.getProductVariantId()
-            )
-            .orElse(null);
+        // 2. Kiểm tra SP chính đã tồn tại chưa
+        CartItem mainItem = cartItemRepository
+                .findByCartIdAndProductVariantIdAndParentIdIsNull(
+                        cart.getId(),
+                        request.getProductVariantId())
+                .orElse(null);
 
-    if (mainItem != null) {
-        // 👉 ĐÃ TỒN TẠI → TĂNG SỐ LƯỢNG
-        mainItem.setQuantity(mainItem.getQuantity() + addQty);
-        cartItemRepository.save(mainItem);
+        if (mainItem != null) {
+            // 👉 ĐÃ TỒN TẠI → TĂNG SỐ LƯỢNG
+            mainItem.setQuantity(mainItem.getQuantity() + addQty);
+            cartItemRepository.save(mainItem);
 
-    } else {
-        // 👉 CHƯA TỒN TẠI → TẠO MỚI
-        mainItem = new CartItem();
-        mainItem.setCartId(cart.getId());
-        mainItem.setProductVariantId(request.getProductVariantId());
-        mainItem.setQuantity(addQty);
-        mainItem.setParentId(null);
+        } else {
+            // 👉 CHƯA TỒN TẠI → TẠO MỚI
+            mainItem = new CartItem();
+            mainItem.setCartId(cart.getId());
+            mainItem.setProductVariantId(request.getProductVariantId());
+            mainItem.setQuantity(addQty);
+            mainItem.setParentId(null);
 
-        mainItem = cartItemRepository.save(mainItem);
-    }
+            mainItem = cartItemRepository.save(mainItem);
+        }
 
-    // 3. Xử lý COMBO (chỉ add nếu FE gửi lên)
-    if (request.getComboVariantIds() != null
-            && !request.getComboVariantIds().isEmpty()) {
+        // 3. Xử lý COMBO (chỉ add nếu FE gửi lên)
+        if (request.getComboVariantIds() != null
+                && !request.getComboVariantIds().isEmpty()) {
 
-        // Lấy danh sách combo hiện có
-        List<CartItem> existingCombos =
-                cartItemRepository.findByParentId(mainItem.getId());
+            // Lấy danh sách combo hiện có
+            List<CartItem> existingCombos = cartItemRepository.findByParentId(mainItem.getId());
 
-        Set<Long> existingComboVariantIds = existingCombos.stream()
-                .map(CartItem::getProductVariantId)
-                .collect(Collectors.toSet());
+            Set<Long> existingComboVariantIds = existingCombos.stream()
+                    .map(CartItem::getProductVariantId)
+                    .collect(Collectors.toSet());
 
-        for (Long comboVariantId : request.getComboVariantIds()) {
+            for (Long comboVariantId : request.getComboVariantIds()) {
 
-            // Nếu combo đã tồn tại → bỏ qua (không nhân đôi)
-            if (existingComboVariantIds.contains(comboVariantId)) {
-                continue;
+                // Nếu combo đã tồn tại → bỏ qua (không nhân đôi)
+                if (existingComboVariantIds.contains(comboVariantId)) {
+                    continue;
+                }
+
+                CartItem comboItem = new CartItem();
+                comboItem.setCartId(cart.getId());
+                comboItem.setProductVariantId(comboVariantId);
+                comboItem.setQuantity(1);
+                comboItem.setParentId(mainItem.getId());
+
+                cartItemRepository.save(comboItem);
             }
-
-            CartItem comboItem = new CartItem();
-            comboItem.setCartId(cart.getId());
-            comboItem.setProductVariantId(comboVariantId);
-            comboItem.setQuantity(1);
-            comboItem.setParentId(mainItem.getId());
-
-            cartItemRepository.save(comboItem);
         }
     }
-}
 
     public CartResponse getCartByUserId(Long userId) {
 
-    CartResponse response = new CartResponse();
-    List<CartResponse.CartItemDto> dtoList = new ArrayList<>();
+        CartResponse response = new CartResponse();
+        List<CartResponse.CartItemDto> dtoList = new ArrayList<>();
 
-    // 1. Lấy cart
-    Cart cart = cartRepository.findByUserId(userId).orElse(null);
-    if (cart == null) {
+        // 1. Lấy cart
+        Cart cart = cartRepository.findByUserId(userId).orElse(null);
+        if (cart == null) {
+            response.setItems(dtoList);
+            return response;
+        }
+
+        // 2. Lấy list item trong giỏ
+        List<CartItem> items = cartItemRepository.findByCartId(cart.getId());
+
+        // 3. Lấy danh sách productVariant ID của SP chính
+        List<Long> mainVariantIds = items.stream()
+                .filter(i -> i.getParentId() == null)
+                .map(CartItem::getProductVariantId)
+                .toList();
+
+        // 4. Lấy sản phẩm để suy ra product_id
+        Map<Long, ProductVariant> variantMap = productVariantRepository
+                .findAllById(mainVariantIds)
+                .stream()
+                .collect(Collectors.toMap(ProductVariant::getId, v -> v));
+
+        // 5. Lấy danh sách productId của SP chính
+        List<Long> mainProductIds = variantMap.values()
+                .stream()
+                .map(v -> v.getProduct().getId())
+                .toList();
+
+        // 6. 🔥 QUERY COMBO TỪ product_combos
+        List<ProductCombo> combos = productComboRepository.findByMainProductIds(mainProductIds);
+
+        // Convert sang map để truy nhanh
+        Map<Long, List<ProductCombo>> comboMap = combos.stream()
+                .collect(Collectors.groupingBy(pc -> pc.getMainProduct().getId()));
+
+        // 7. Build DTO
+        for (CartItem ci : items) {
+            if (ci.getParentId() != null)
+                continue; // skip phụ kiện
+
+            ProductVariant variant = variantMap.get(ci.getProductVariantId());
+
+            CartResponse.CartItemDto dto = new CartResponse.CartItemDto();
+            dto.setId(ci.getId());
+            dto.setProductVariantId(variant.getId());
+            dto.setSku(variant.getSku());
+            dto.setName(variant.getProduct().getName());
+            dto.setSlug(variant.getProduct().getSlug());
+            dto.setImage(variant.getImageUrl());
+            dto.setPrice(variant.getPrice());
+            dto.setOriginalPrice(variant.getProduct().getOriginalPrice());
+            dto.setColorName(variant.getColorName());
+            dto.setRom(variant.getRom());
+            dto.setQuantity(ci.getQuantity());
+
+            // 8. 🔥 LẤY COMBO CHO SẢN PHẨM NÀY
+            List<ProductCombo> pcList = comboMap.getOrDefault(
+                    variant.getProduct().getId(),
+                    List.of());
+
+            List<CartResponse.CartComboItemDto> comboDtos = pcList.stream().map(pc -> {
+                CartResponse.CartComboItemDto c = new CartResponse.CartComboItemDto();
+
+                Product rp = pc.getRelatedProduct();
+                c.setId(rp.getId());
+                c.setName(rp.getName());
+                c.setImage(rp.getThumbnailUrl());
+                c.setOriginalPrice(rp.getOriginalPrice());
+                c.setPrice(rp.getDisplayPrice());
+                c.setDiscountAmount(pc.getDiscountAmount());
+                c.setNote(pc.getNote());
+                c.setChecked(false);
+
+                return c;
+            }).toList();
+
+            dto.setCombos(comboDtos);
+            dtoList.add(dto);
+        }
+
         response.setItems(dtoList);
         return response;
     }
-
-    // 2. Lấy list item trong giỏ
-    List<CartItem> items = cartItemRepository.findByCartId(cart.getId());
-
-    // 3. Lấy danh sách productVariant ID của SP chính
-    List<Long> mainVariantIds = items.stream()
-            .filter(i -> i.getParentId() == null)
-            .map(CartItem::getProductVariantId)
-            .toList();
-
-    // 4. Lấy sản phẩm để suy ra product_id
-    Map<Long, ProductVariant> variantMap = productVariantRepository
-            .findAllById(mainVariantIds)
-            .stream()
-            .collect(Collectors.toMap(ProductVariant::getId, v -> v));
-
-    // 5. Lấy danh sách productId của SP chính
-    List<Long> mainProductIds = variantMap.values()
-            .stream()
-            .map(v -> v.getProduct().getId())
-            .toList();
-
-    // 6. 🔥 QUERY COMBO TỪ product_combos
-    List<ProductCombo> combos = productComboRepository.findByMainProductIds(mainProductIds);
-
-    // Convert sang map để truy nhanh
-    Map<Long, List<ProductCombo>> comboMap = combos.stream()
-            .collect(Collectors.groupingBy(pc -> pc.getMainProduct().getId()));
-
-    // 7. Build DTO
-    for (CartItem ci : items) {
-        if (ci.getParentId() != null) continue; // skip phụ kiện
-
-        ProductVariant variant = variantMap.get(ci.getProductVariantId());
-
-        CartResponse.CartItemDto dto = new CartResponse.CartItemDto();
-        dto.setId(ci.getId());
-        dto.setSku(variant.getSku());
-        dto.setName(variant.getProduct().getName());
-        dto.setSlug(variant.getProduct().getSlug());
-        dto.setImage(variant.getImageUrl());
-        dto.setPrice(variant.getPrice());
-        dto.setOriginalPrice(variant.getProduct().getOriginalPrice());
-        dto.setColorName(variant.getColorName());
-        dto.setRom(variant.getRom());
-        dto.setQuantity(ci.getQuantity());
-
-        // 8. 🔥 LẤY COMBO CHO SẢN PHẨM NÀY
-        List<ProductCombo> pcList = comboMap.getOrDefault(
-                variant.getProduct().getId(),
-                List.of()
-        );
-
-        List<CartResponse.CartComboItemDto> comboDtos = pcList.stream().map(pc -> {
-            CartResponse.CartComboItemDto c = new CartResponse.CartComboItemDto();
-
-            Product rp = pc.getRelatedProduct();
-            c.setId(pc.getId());
-            c.setName(rp.getName());
-            c.setImage(rp.getThumbnailUrl());
-            c.setOriginalPrice(rp.getOriginalPrice());
-            c.setPrice(rp.getDisplayPrice());
-            c.setDiscountAmount(pc.getDiscountAmount());
-            c.setNote(pc.getNote());
-            c.setChecked(false);
-
-            return c;
-        }).toList();
-
-        dto.setCombos(comboDtos);
-        dtoList.add(dto);
-    }
-
-    response.setItems(dtoList);
-    return response;
-}
 
     // =========================================================================
     // 3. CẬP NHẬT SỐ LƯỢNG SẢN PHẨM
@@ -218,8 +217,6 @@ public void addToCart(Long userId, AddToCartRequest request) {
         boolean exists = cartItemRepository.existsById(cartItemId);
         if (!exists)
             return;
-
-       
 
         // Sau đó xóa chính nó
         cartItemRepository.deleteById(cartItemId);
