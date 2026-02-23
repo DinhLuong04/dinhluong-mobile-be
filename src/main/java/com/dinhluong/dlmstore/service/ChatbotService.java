@@ -56,7 +56,7 @@ public class ChatbotService {
             // CASE 1: DETAIL (Chi tiết 1 sản phẩm)
             if ("DETAIL".equalsIgnoreCase(criteria.getIntent())) {
                 String keyword = criteria.getTargetProductName();
-                Page<ProductCardResponse> page = productService.getAllProducts(
+                Page<ProductCardResponse> page = productService.getAllProducts(null,
                         null, null, null, null, null, null, null, null, null, null, null, null, null,
                         keyword, pageable);
                 if (page.hasContent())
@@ -70,7 +70,7 @@ public class ChatbotService {
                 for (String modelName : models) {
                     String cleanName = modelName.trim(); 
                     if (!cleanName.isEmpty()) {
-                        Page<ProductCardResponse> p = productService.getAllProducts(
+                        Page<ProductCardResponse> p = productService.getAllProducts(null,
                                 null, null, null, null, null, null, null, null, null, null, null, null, null,
                                 cleanName, pageable);
                         if (p.hasContent()) {
@@ -82,7 +82,7 @@ public class ChatbotService {
 
             // CASE 3: SEARCH / CHAT (Tìm kiếm chung theo bộ lọc)
             else {
-                Page<ProductCardResponse> page = productService.getAllProducts(
+                Page<ProductCardResponse> page = productService.getAllProducts(null,
                         criteria.getBrands(), criteria.getOsTypes(), null, null,
                         criteria.getNetworks(), criteria.getMinPrice(), criteria.getMaxPrice(),
                         null, null, null, null, null, null, criteria.getSearchKeyword(), pageable);

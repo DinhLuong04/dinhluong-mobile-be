@@ -156,6 +156,7 @@ public abstract class ProductMapper {
             List<ProductDetailResponse.VariantDetailDto> variantDtos = product.getVariants().stream()
                     .map(v -> {
                         ProductDetailResponse.VariantDetailDto dto = new ProductDetailResponse.VariantDetailDto();
+                        dto.setId(v.getId());
                         dto.setSku(v.getSku());
                         dto.setRom(v.getRom());
                         dto.setColorName(v.getColorName());

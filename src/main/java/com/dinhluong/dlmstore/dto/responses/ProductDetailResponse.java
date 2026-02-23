@@ -55,6 +55,7 @@ public class ProductDetailResponse {
 
     @Data
     public static class VariantDetailDto {
+        private Long id;
         private String sku;
         private String rom;
         private String colorName;

@@ -39,6 +39,7 @@ public class ProductService {
 
     @Transactional(readOnly = true)
     public Page<ProductCardResponse> getAllProducts(
+            String categorySlug,
             List<String> brands,
             List<String> osTypes,
             List<String> roms,
@@ -53,7 +54,9 @@ public class ProductService {
             Pageable pageable) {
 
         Specification<Product> spec = Specification.where(null);
-
+        if (StringUtils.hasText(categorySlug)) {
+            spec = spec.and((root, query, cb) -> cb.equal(root.get("category").get("slug"), categorySlug));
+        }
         if (StringUtils.hasText(search)) {
             String keyword = search.trim().toLowerCase();
             spec = spec.and((root, query, cb) -> {

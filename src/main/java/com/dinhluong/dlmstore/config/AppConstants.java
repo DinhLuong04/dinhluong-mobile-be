@@ -2,7 +2,8 @@ package com.dinhluong.dlmstore.config;
 
 public class AppConstants {
     public static final String[] USER_APIS = {
-            "/api/users/**"
+            "/api/users/**",
+                "/api/cart/**",
     };
     public static final String[] ADMIN_APIS = {
             "/api/admin/**"

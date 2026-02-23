@@ -32,6 +32,7 @@ public class ProductController {
     public ApiResponse<Page<ProductCardResponse>> getProducts(
             // 1. Tìm kiếm & Cơ bản
             @RequestParam(required = false) String search,
+            @RequestParam(name = "category", required = false) String categorySlug,
 
             // 2. Bộ lọc danh sách (Multi-select Checkbox) -> Dùng List<String>
             @RequestParam(required = false) List<String> brands, // VD: ?brands=Samsung&brands=Oppo
@@ -65,6 +66,7 @@ public class ProductController {
 
         // Gọi Service với đầy đủ tham số mới
         Page<ProductCardResponse> result = productService.getAllProducts(
+                categorySlug,
                 brands,
                 os,
                 roms,

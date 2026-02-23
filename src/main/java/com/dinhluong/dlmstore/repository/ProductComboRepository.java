@@ -17,4 +17,12 @@ public interface ProductComboRepository extends JpaRepository<ProductCombo, Long
            "WHERE pc.mainProduct.slug = :slug " +
            "AND rp.status = 'ACTIVE'") // Chỉ lấy sản phẩm đang kinh doanh
     List<ProductCombo> findByMainProductSlug(@Param("slug") String slug);
+
+  @Query("""
+    SELECT pc
+    FROM ProductCombo pc
+    JOIN FETCH pc.relatedProduct rp
+    WHERE pc.mainProduct.id IN :ids
+""")
+List<ProductCombo> findByMainProductIds(@Param("ids") List<Long> ids);
 }
