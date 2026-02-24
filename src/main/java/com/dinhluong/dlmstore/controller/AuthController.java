@@ -52,8 +52,8 @@ public class AuthController {
         String token = tokenProvider.generateToken(user);
 
         String accountType = "GOOGLE".equalsIgnoreCase(user.getAuthProvider())
-                ? "Google"
-                : "Normal";
+                ? "GOOGLE"
+                : "NORMAL";
 
         return ApiResponse.success(
                 "Đăng nhập thành công",

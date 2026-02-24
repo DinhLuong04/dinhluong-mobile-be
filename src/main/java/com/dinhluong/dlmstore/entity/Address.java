@@ -2,7 +2,7 @@ package com.dinhluong.dlmstore.entity;
 
 import jakarta.persistence.*;
 import lombok.*;
-
+import com.fasterxml.jackson.annotation.JsonIgnore; 
 @Entity
 @Table(name = "addresses")
 @Getter
@@ -19,6 +19,7 @@ public class Address {
     // Liên kết n-1 với bảng Users
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "user_id", nullable = false)
+    @JsonIgnore // BẮT BUỘC THÊM DÒNG NÀY
     private Users user;
 
     @Column(name = "street", length = 255)

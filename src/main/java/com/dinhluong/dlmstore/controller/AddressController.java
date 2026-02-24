@@ -14,7 +14,6 @@ import java.util.List;
 @RestController
 @RequestMapping("/api/addresses")
 @RequiredArgsConstructor
-@CrossOrigin("*")
 public class AddressController {
 
     private final AddressService addressService;
@@ -43,5 +42,24 @@ public class AddressController {
         
         addressService.setDefaultAddress(currentUser.getId(), id);
         return ResponseEntity.ok(ApiResponse.success("Cập nhật địa chỉ mặc định thành công", null));
+    }
+
+    @PutMapping("/{id}")
+    public ResponseEntity<ApiResponse<Address>> updateAddress(
+            @AuthenticationPrincipal CustomUserPrincipal currentUser, 
+            @PathVariable Long id,
+            @RequestBody Address address) {
+        
+        Address updatedAddress = addressService.updateAddress(currentUser.getId(), id, address);
+        return ResponseEntity.ok(ApiResponse.success("Cập nhật địa chỉ thành công", updatedAddress));
+    }
+
+    @DeleteMapping("/{id}")
+    public ResponseEntity<ApiResponse<String>> deleteAddress(
+            @AuthenticationPrincipal CustomUserPrincipal currentUser, 
+            @PathVariable Long id) {
+        
+        addressService.deleteAddress(currentUser.getId(), id);
+        return ResponseEntity.ok(ApiResponse.success("Xóa địa chỉ thành công", null));
     }
 }

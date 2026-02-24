@@ -58,4 +58,45 @@ public class AddressService {
         address.setIsDefault(true);
         addressRepository.save(address);
     }
+
+    @Transactional
+    public Address updateAddress(Long userId, Long addressId, Address addressDetails) {
+        Address address = addressRepository.findById(addressId)
+            .orElseThrow(() -> new RuntimeException("Không tìm thấy địa chỉ với ID: " + addressId));
+            
+        // Kiểm tra bảo mật: Chỉ cho phép sửa địa chỉ của chính mình
+        if (!address.getUser().getId().equals(userId)) {
+            throw new RuntimeException("Bạn không có quyền cập nhật địa chỉ này");
+        }
+
+        // Cập nhật các trường thông tin
+        address.setStreet(addressDetails.getStreet());
+        address.setCity(addressDetails.getCity());
+        address.setProvince(addressDetails.getProvince());
+        address.setCountry(addressDetails.getCountry());
+        
+        // Xử lý nếu người dùng tick chọn địa chỉ này làm mặc định trong lúc cập nhật
+        if (addressDetails.getIsDefault() != null && addressDetails.getIsDefault()) {
+            addressRepository.resetDefaultAddressForUser(userId);
+            address.setIsDefault(true);
+        } else if (addressDetails.getIsDefault() != null) {
+            address.setIsDefault(addressDetails.getIsDefault());
+        }
+
+        return addressRepository.save(address);
+    }
+
+    // Xóa địa chỉ
+    @Transactional
+    public void deleteAddress(Long userId, Long addressId) {
+        Address address = addressRepository.findById(addressId)
+            .orElseThrow(() -> new RuntimeException("Không tìm thấy địa chỉ với ID: " + addressId));
+
+        // Kiểm tra bảo mật
+        if (!address.getUser().getId().equals(userId)) {
+            throw new RuntimeException("Bạn không có quyền xóa địa chỉ này");
+        }
+
+        addressRepository.delete(address);
+    }
 }
