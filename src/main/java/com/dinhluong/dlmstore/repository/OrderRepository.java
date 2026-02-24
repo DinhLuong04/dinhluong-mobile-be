@@ -28,4 +28,13 @@ public interface OrderRepository extends JpaRepository<Order, Long> {
 
     // Đếm số lượng đơn hàng thành công
     Integer countByUserIdAndStatus(Long userId, Order.OrderStatus status);
+
+    @Query("SELECT CASE WHEN COUNT(o) > 0 THEN true ELSE false END " +
+           "FROM Order o " +
+           "JOIN OrderItem oi ON o.id = oi.orderId " +
+           "JOIN ProductVariant pv ON oi.productVariantId = pv.id " +
+           "WHERE o.userId = :userId " +
+           "AND pv.product.id = :productId " +
+           "AND o.status = 'DELIVERED'")
+    boolean hasUserPurchasedProduct(@Param("userId") Long userId, @Param("productId") Long productId);
 }

@@ -41,4 +41,6 @@ public interface UserRepository extends JpaRepository<Users, Long> {
     @Modifying
     @Query("UPDATE Users u SET u.isEnabled = false WHERE u.id = :id")
     void disableUser(@Param("id") Long id);
+
+    Optional<Users> findById(@Param("id") Long id);
 }

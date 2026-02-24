@@ -8,7 +8,7 @@ public class AppConstants {
         "/api/orders/**",
         "/api/profile/**",
         "/api/addresses/**",
-        
+        "/api/reviews/"
     };
     public static final String[] ADMIN_APIS = {
             "/api/admin/**"
@@ -24,6 +24,7 @@ public class AppConstants {
             "/login/oauth2/**",
             "/ws/**",
             "api/products/**",
-            "api/chatbot"
+            "api/chatbot",
+            "api/reviews/products/**"
     };
 }
