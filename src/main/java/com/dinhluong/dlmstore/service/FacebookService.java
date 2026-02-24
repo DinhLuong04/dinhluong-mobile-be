@@ -50,29 +50,31 @@ public class FacebookService {
         
         final String finalEmail = email; 
         final String finalPicture = picture; 
-       
-        Users user = userRepository.findByEmail(finalEmail)
-                .orElseGet(() -> {
-                    Roles userRole = roleRepository.findByName("USER")
-                            .orElseThrow(() -> new ValidationException("ROLE USER not found"));
+       // TÌM HOẶC TẠO MỚI USER
+        Users user = userRepository.findByEmail(finalEmail).orElse(null);
 
-                    Users u = new Users();
-                    u.setEmail(finalEmail); 
-                    u.setFullName(name);
-                    
-                
-                    u.setAvatarUrl(finalPicture); 
-                    
-                    
-                    u.setAuthProvider("FACEBOOK");
-                    u.setProviderId(facebookId);
-                    u.setRole(userRole);
-                    u.setIsEnabled(true);
-                    u.setCreatedAt(LocalDateTime.now());
-                    u.setUpdatedAt(LocalDateTime.now());
+        if (user == null) {
+            Roles userRole = roleRepository.findByName("USER")
+                    .orElseThrow(() -> new ValidationException("ROLE USER not found"));
 
-                    return userRepository.save(u);
-                });
+            user = new Users();
+            user.setEmail(finalEmail); 
+            user.setFullName(name);
+            user.setAvatarUrl(finalPicture); 
+            user.setAuthProvider("FACEBOOK");
+            user.setProviderId(facebookId);
+            user.setRole(userRole);
+            user.setIsEnabled(true);
+            user.setCreatedAt(LocalDateTime.now());
+            user.setUpdatedAt(LocalDateTime.now());
+
+            user = userRepository.save(user);
+        } else {
+            // 🔥 THÊM ĐOẠN CHECK NÀY ĐỂ CHẶN TÀI KHOẢN BỊ KHÓA
+            if (!Boolean.TRUE.equals(user.getIsEnabled())) {
+                throw new RuntimeException("Tài khoản của bạn đã bị khóa. Vui lòng liên hệ Admin!");
+            }
+        }
 
         String jwt = jwtTokenProvider.generateToken(user);
 

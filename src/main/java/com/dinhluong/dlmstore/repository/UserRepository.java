@@ -43,4 +43,13 @@ public interface UserRepository extends JpaRepository<Users, Long> {
     void disableUser(@Param("id") Long id);
 
     Optional<Users> findById(@Param("id") Long id);
+
+    @Query("SELECT u FROM Users u WHERE " +
+           "(:keyword IS NULL OR :keyword = '' OR " +
+           "LOWER(u.fullName) LIKE LOWER(CONCAT('%', :keyword, '%')) OR " +
+           "LOWER(u.email) LIKE LOWER(CONCAT('%', :keyword, '%')) OR " +
+           "u.phone LIKE CONCAT('%', :keyword, '%')) AND " +
+           "(:isEnabled IS NULL OR u.isEnabled = :isEnabled) " +
+           "ORDER BY u.createdAt DESC")
+    List<Users> searchAdminUsers(@Param("keyword") String keyword, @Param("isEnabled") Boolean isEnabled);
 }

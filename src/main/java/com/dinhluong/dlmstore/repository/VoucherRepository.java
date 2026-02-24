@@ -26,4 +26,9 @@ public interface VoucherRepository extends JpaRepository<Voucher, Long> {
            "AND v.usedCount < v.usageLimit " +
            "AND v.id NOT IN (SELECT uv.voucher.id FROM UserVoucher uv WHERE uv.userId = :userId)")
     List<Voucher> findAvailableVouchersForUser(@Param("userId") Long userId);
+
+    @Query("SELECT v FROM Voucher v WHERE " +
+           ":keyword IS NULL OR :keyword = '' OR LOWER(v.code) LIKE LOWER(CONCAT('%', :keyword, '%')) " +
+           "ORDER BY v.id DESC")
+    List<Voucher> searchAdminVouchers(@Param("keyword") String keyword);
 }

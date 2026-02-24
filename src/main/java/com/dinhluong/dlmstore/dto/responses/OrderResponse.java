@@ -21,7 +21,8 @@ public class OrderResponse {
     private String receiverName;
     private String receiverPhone;
     private String receiverAddress;
-    
+    private String paymentMethod;
+    private String paymentStatus;
     // Đổi 'I' hoa thành 'i' thường cho chuẩn quy tắc Java
     private List<OrderItemResponse> items;
 }

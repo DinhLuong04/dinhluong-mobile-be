@@ -11,30 +11,43 @@ import java.util.List;
 
 @Repository
 public interface OrderRepository extends JpaRepository<Order, Long> {
-    // Hàm này để sau này làm API: Lấy danh sách đơn hàng của 1 user
-    List<Order> findByUserIdOrderByCreatedAtDesc(Long userId);
+       // Hàm này để sau này làm API: Lấy danh sách đơn hàng của 1 user
+       List<Order> findByUserIdOrderByCreatedAtDesc(Long userId);
 
+       // Lấy đơn hàng theo trạng thái
+       List<Order> findByUserIdAndStatusOrderByCreatedAtDesc(Long userId, Order.OrderStatus status);
 
-    
-    // Lấy đơn hàng theo trạng thái
-    List<Order> findByUserIdAndStatusOrderByCreatedAtDesc(Long userId, Order.OrderStatus status);
-    
-    // Lấy 5 đơn hàng gần nhất (Cho màn Overview)
-    List<Order> findTop5ByUserIdOrderByCreatedAtDesc(Long userId);
+       // Lấy 5 đơn hàng gần nhất (Cho màn Overview)
+       List<Order> findTop5ByUserIdOrderByCreatedAtDesc(Long userId);
 
-    // Tính tổng tiền các đơn hàng ĐÃ GIAO THÀNH CÔNG (để tính hạng thành viên)
-    @Query("SELECT SUM(o.totalAmount) FROM Order o WHERE o.userId = :userId AND o.status = 'DELIVERED'")
-    BigDecimal getTotalSpentByUserId(@Param("userId") Long userId);
+       // Tính tổng tiền các đơn hàng ĐÃ GIAO THÀNH CÔNG (để tính hạng thành viên)
+       @Query("SELECT SUM(o.totalAmount) FROM Order o WHERE o.userId = :userId AND o.status = 'DELIVERED'")
+       BigDecimal getTotalSpentByUserId(@Param("userId") Long userId);
 
-    // Đếm số lượng đơn hàng thành công
-    Integer countByUserIdAndStatus(Long userId, Order.OrderStatus status);
+       // Đếm số lượng đơn hàng thành công
+       Integer countByUserIdAndStatus(Long userId, Order.OrderStatus status);
 
-    @Query("SELECT CASE WHEN COUNT(o) > 0 THEN true ELSE false END " +
-           "FROM Order o " +
-           "JOIN OrderItem oi ON o.id = oi.orderId " +
-           "JOIN ProductVariant pv ON oi.productVariantId = pv.id " +
-           "WHERE o.userId = :userId " +
-           "AND pv.product.id = :productId " +
-           "AND o.status = 'DELIVERED'")
-    boolean hasUserPurchasedProduct(@Param("userId") Long userId, @Param("productId") Long productId);
+       @Query("SELECT CASE WHEN COUNT(o) > 0 THEN true ELSE false END " +
+                     "FROM Order o " +
+                     "JOIN OrderItem oi ON o.id = oi.orderId " +
+                     "JOIN ProductVariant pv ON oi.productVariantId = pv.id " +
+                     "WHERE o.userId = :userId " +
+                     "AND pv.product.id = :productId " +
+                     "AND o.status = 'DELIVERED'")
+       boolean hasUserPurchasedProduct(@Param("userId") Long userId, @Param("productId") Long productId);
+
+       @Query("SELECT o FROM Order o WHERE " +
+                     "(:status IS NULL OR o.status = :status) AND " +
+                     "(:keyword IS NULL OR :keyword = '' OR LOWER(o.receiverName) LIKE LOWER(CONCAT('%', :keyword, '%')) "
+                     +
+                     "OR o.receiverPhone LIKE CONCAT('%', :keyword, '%') " +
+                     "OR CAST(o.id AS string) LIKE CONCAT('%', :keyword, '%')) " +
+                     "ORDER BY o.createdAt DESC")
+       List<Order> searchAdminOrders(@Param("status") Order.OrderStatus status, @Param("keyword") String keyword);
+
+       // Đếm tổng số đơn hàng của 1 user
+       long countByUserId(Long userId);
+
+       @Query("SELECT SUM(o.totalAmount) FROM Order o WHERE o.userId = :userId AND o.status = :status")
+BigDecimal getTotalSpentByUserIdAndStatus(@Param("userId") Long userId, @Param("status") Order.OrderStatus status);
 }

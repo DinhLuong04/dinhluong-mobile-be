@@ -47,25 +47,31 @@ public class GoogleService {
         String googleId = (String) payload.get("sub"); 
 
      
-        Users user = userRepository.findByEmail(email)
-                .orElseGet(() -> {
-                    Roles userRole = roleRepository.findByName("USER")
-                            .orElseThrow(() -> new ValidationException("ROLE USER not found"));
+        Users user = userRepository.findByEmail(email).orElse(null);
 
-                    Users u = new Users();
-                    u.setEmail(email);
-                    u.setFullName(fullName);
-                    u.setAvatarUrl(picture);
-                    u.setAuthProvider("GOOGLE");
-                    u.setProviderId(googleId);
-                    u.setRole(userRole);
-                    u.setIsEnabled(true);
-                    u.setCreatedAt(LocalDateTime.now());
-                    u.setUpdatedAt(LocalDateTime.now());
+        if (user == null) {
+            // Nếu chưa có thì tạo mới
+            Roles userRole = roleRepository.findByName("USER")
+                    .orElseThrow(() -> new ValidationException("ROLE USER not found"));
 
-                    return userRepository.save(u);
-                });
+            user = new Users();
+            user.setEmail(email);
+            user.setFullName(fullName);
+            user.setAvatarUrl(picture);
+            user.setAuthProvider("GOOGLE");
+            user.setProviderId(googleId);
+            user.setRole(userRole);
+            user.setIsEnabled(true);
+            user.setCreatedAt(LocalDateTime.now());
+            user.setUpdatedAt(LocalDateTime.now());
 
+            user = userRepository.save(user);
+        } else {
+            // 🔥 THÊM ĐOẠN CHECK NÀY ĐỂ CHẶN TÀI KHOẢN BỊ KHÓA
+            if (!Boolean.TRUE.equals(user.getIsEnabled())) {
+                throw new RuntimeException("Tài khoản của bạn đã bị khóa. Vui lòng liên hệ Admin!");
+            }
+        }
         String typeAccount = "GOOGLE";
         String jwt = jwtTokenProvider.generateToken(user);
 
