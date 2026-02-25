@@ -17,7 +17,7 @@ public class ProductVariant  {
     @JoinColumn(name = "product_id")
     @ToString.Exclude
     private Product product;
-
+    @Column(name = "sku")
     private String sku;
     
     private String rom;
@@ -40,4 +40,6 @@ public class ProductVariant  {
 
     @Column(name = "is_active") // <--- Đã sửa
     private boolean isActive = true;
+    @Version
+    private Integer version;
 }

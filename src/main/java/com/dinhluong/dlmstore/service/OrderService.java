@@ -408,17 +408,138 @@ public class OrderService {
         }).collect(Collectors.toList());
     }
 
-    // Cập nhật trạng thái đơn hàng (Admin)
-    @Transactional
+   @Transactional
     public OrderResponse updateOrderStatus(Long orderId, String newStatusStr) {
         Order order = orderRepository.findById(orderId)
                 .orElseThrow(() -> new RuntimeException("Không tìm thấy đơn hàng"));
 
+        Order.OrderStatus currentStatus = order.getStatus();
         Order.OrderStatus newStatus = Order.OrderStatus.valueOf(newStatusStr.toUpperCase());
-        order.setStatus(newStatus);
 
+        // 1. Ngăn chặn cập nhật trạng thái đơn đã đóng
+        if (currentStatus == Order.OrderStatus.DELIVERED ||
+                currentStatus == Order.OrderStatus.CANCELLED ||
+                currentStatus == Order.OrderStatus.RETURNED) {
+            throw new RuntimeException("Không thể thay đổi trạng thái của đơn hàng đã đóng!");
+        }
+
+        // 2. Lấy danh sách sản phẩm trong đơn hàng
+        List<OrderItem> items = orderItemRepository.findByOrderId(orderId);
+
+        // ==============================================================
+        // KỊCH BẢN A: Chuyển sang PROCESSING -> TRỪ KHO (Cả Chính & Phụ kiện)
+        // ==============================================================
+        if (currentStatus == Order.OrderStatus.PENDING && newStatus == Order.OrderStatus.PROCESSING) {
+            for (OrderItem item : items) {
+                // Trừ kho sản phẩm chính
+                decreaseStock(item.getProductVariantId(), item.getQuantity(), "Sản phẩm chính");
+
+                // Trừ kho phụ kiện (nếu có)
+                if (item.getComboItems() != null && !item.getComboItems().isEmpty()) {
+                    System.out.println("DEBUG: Tìm thấy " + item.getComboItems().size() + " phụ kiện");
+                    for (ComboItemDetail combo : item.getComboItems()) {
+                        String accessorySku = "PK-" + combo.getVariantId();
+                        
+                        // Dùng orElseThrow để bắt lỗi ngay lập tức nếu dữ liệu SKU phụ kiện sai
+                        ProductVariant accessoryVariant = productVariantRepository.findBySku(accessorySku)
+                                .orElseThrow(() -> new RuntimeException("Không tìm thấy phụ kiện với SKU: " + accessorySku));
+                        
+                        System.out.println("DEBUG: Đang trừ kho cho Variant ID (Phụ kiện): " + accessoryVariant.getId());
+                        decreaseStock(accessoryVariant.getId(), item.getQuantity(), "Phụ kiện: " + combo.getName());
+                    }
+                } else {
+                    System.out.println("DEBUG: comboItems đang bị NULL hoặc rỗng cho OrderItem ID: " + item.getId());
+                }
+            }
+        }
+
+        // ==============================================================
+        // KỊCH BẢN B: HỦY ĐƠN HOẶC HOÀN HÀNG -> CỘNG LẠI KHO
+        // ==============================================================
+        else if (newStatus == Order.OrderStatus.CANCELLED || newStatus == Order.OrderStatus.RETURNED) {
+            // Chỉ hoàn kho nếu trạng thái trước đó đã trừ kho (PROCESSING hoặc SHIPPED)
+            if (currentStatus == Order.OrderStatus.PROCESSING || currentStatus == Order.OrderStatus.SHIPPED) {
+                for (OrderItem item : items) {
+                    // Hoàn kho sản phẩm chính
+                    increaseStock(item.getProductVariantId(), item.getQuantity());
+
+                    // Hoàn kho phụ kiện (nếu có)
+                    if (item.getComboItems() != null && !item.getComboItems().isEmpty()) {
+                        for (ComboItemDetail combo : item.getComboItems()) {
+                            String accessorySku = "PK-" + combo.getVariantId();
+                            
+                            // Chỉ cộng lại kho nếu thực sự tìm thấy phụ kiện đó trong database
+                            ProductVariant accessoryVariant = productVariantRepository.findBySku(accessorySku).orElse(null);
+                            if (accessoryVariant != null) {
+                                System.out.println("DEBUG: Đang hoàn kho cho Variant ID (Phụ kiện): " + accessoryVariant.getId());
+                                increaseStock(accessoryVariant.getId(), item.getQuantity()); // ĐÃ FIX: dùng increaseStock
+                            } else {
+                                System.out.println("WARN: Không tìm thấy phụ kiện hoàn kho với SKU: " + accessorySku);
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        // 3. Cập nhật trạng thái mới
+        order.setStatus(newStatus);
         Order updatedOrder = orderRepository.save(order);
 
         return mapToOrderResponse(updatedOrder);
+    }
+
+    /**
+     * Hàm hỗ trợ trừ kho và tăng soldQuantity
+     */
+    private void decreaseStock(Long variantId, int quantity, String errorContext) {
+        ProductVariant variant = productVariantRepository.findById(variantId)
+                .orElseThrow(() -> new RuntimeException("Không tìm thấy biến thể: " + variantId));
+
+        if (variant.getStockQuantity() < quantity) {
+            throw new RuntimeException(errorContext + " không đủ số lượng trong kho!");
+        }
+
+        // Trừ tồn kho
+        variant.setStockQuantity(variant.getStockQuantity() - quantity);
+
+        // Tăng số lượng đã bán cho sản phẩm cha
+        Product product = variant.getProduct();
+        product.setSoldQuantity((product.getSoldQuantity() != null ? product.getSoldQuantity() : 0) + quantity);
+
+        productVariantRepository.save(variant);
+        updateProductTotalStock(product);
+    }
+
+    /**
+     * Hàm hỗ trợ cộng lại kho và giảm soldQuantity
+     */
+    private void increaseStock(Long variantId, int quantity) {
+        ProductVariant variant = productVariantRepository.findById(variantId).orElse(null);
+        if (variant != null) {
+            // Cộng lại tồn kho
+            variant.setStockQuantity(variant.getStockQuantity() + quantity);
+
+            // Giảm lượt bán của sản phẩm cha
+            Product product = variant.getProduct();
+            int currentSold = product.getSoldQuantity() != null ? product.getSoldQuantity() : 0;
+            product.setSoldQuantity(Math.max(0, currentSold - quantity));
+
+            productVariantRepository.save(variant);
+            updateProductTotalStock(product);
+        }
+    }
+
+    /**
+     * Cập nhật tổng tồn kho hiển thị của sản phẩm (Sum of all variants)
+     */
+    private void updateProductTotalStock(Product product) {
+        if (product.getVariants() != null) {
+            int newTotalStock = product.getVariants().stream()
+                    .mapToInt(v -> v.getStockQuantity() != null ? v.getStockQuantity() : 0)
+                    .sum();
+            product.setTotalStock(newTotalStock);
+            productRepository.save(product);
+        }
     }
 }

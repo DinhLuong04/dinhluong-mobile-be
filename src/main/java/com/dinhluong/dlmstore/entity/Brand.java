@@ -1,17 +1,26 @@
 package com.dinhluong.dlmstore.entity;
-import java.math.BigDecimal;
 
 import com.dinhluong.dlmstore.entity.imp.BaseEntity;
-
 import jakarta.persistence.*;
 import lombok.*;
+
 @Entity
 @Table(name = "brands")
 @Data
-public class Brand  {
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
+@EqualsAndHashCode(callSuper = true)
+@NoArgsConstructor
+@AllArgsConstructor
+public class Brand extends BaseEntity {
+
+    @Column(nullable = false, length = 100)
     private String name;
+
+    @Column(columnDefinition = "TEXT")
     private String description;
+
+    @Column(nullable = false, unique = true)
+    private String slug;
+
+    @Column(name = "thumbnail_url")
+    private String thumbnailUrl;
 }

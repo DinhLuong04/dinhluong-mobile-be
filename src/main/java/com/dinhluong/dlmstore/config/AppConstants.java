@@ -15,6 +15,8 @@ public class AppConstants {
             "/api/admin/payments/**",
             "/api/admin/vouchers/**",
             "/api/admin/users/**",
+            "/api/admin/reviews/**",
+            "/api/admin/**"
     };
 
     public static final String[] PUBLIC_APIS = {

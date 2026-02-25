@@ -33,4 +33,16 @@ public interface ProductCommentRepository extends JpaRepository<ProductComment, 
            "WHERE r.productId = :productId AND r.parentId IS NULL AND r.status = 'APPROVED' " +
            "GROUP BY r.rating")
     List<Object[]> countRatingsByProductId(@Param("productId") Long productId);
+
+    // THÊM MỚI CHO ADMIN
+    @Query("SELECT c FROM ProductComment c WHERE " +
+           "c.parentId IS NULL AND " + 
+           "(:status IS NULL OR c.status = :status) AND " +
+           "(:keyword IS NULL OR :keyword = '' OR LOWER(c.content) LIKE LOWER(CONCAT('%', :keyword, '%')) " +
+           "OR LOWER(c.authorName) LIKE LOWER(CONCAT('%', :keyword, '%'))) " +
+           "ORDER BY c.createdAt DESC")
+    Page<ProductComment> searchAdminComments(@Param("keyword") String keyword, @Param("status") CommentStatus status, Pageable pageable);
+
+    // THÊM MỚI CHO ADMIN: Lấy tất cả reply của 1 list parent (không quan tâm status)
+    List<ProductComment> findByParentIdInOrderByCreatedAtAsc(List<Long> parentIds);
 }

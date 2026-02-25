@@ -10,7 +10,8 @@ import com.dinhluong.dlmstore.entity.Enums.ProductStatus;
 import com.dinhluong.dlmstore.entity.Enums.ProductType;
 import com.dinhluong.dlmstore.entity.imp.BaseEntity;
 import com.fasterxml.jackson.databind.JsonNode;
-
+import org.hibernate.annotations.SQLDelete;
+import org.hibernate.annotations.SQLRestriction; //
 import jakarta.persistence.*;
 import lombok.*;
 
@@ -18,6 +19,8 @@ import lombok.*;
 @Table(name = "products")
 @Data
 @EqualsAndHashCode(callSuper = true)
+@SQLDelete(sql = "UPDATE products SET is_deleted = true WHERE id=?")
+@SQLRestriction("is_deleted = false")
 public class Product extends BaseEntity {
 
     private String name;
@@ -76,17 +79,40 @@ public class Product extends BaseEntity {
 
     @Column(name = "support_5g")
     private Boolean support5g;
-   
 
     @Column(name = "special_features")
     private String specialFeatures;
 
     @Column(name = "search_keywords", columnDefinition = "TEXT")
     private String searchKeywords;
+    // --- 1. XÓA MỀM (SOFT DELETE) ---
+    @Column(name = "is_deleted")
+    private boolean isDeleted = false;
+
+    // --- 2. SẢN PHẨM NỔI BẬT (GHIM TRANG CHỦ) ---
+    @Column(name = "is_featured")
+    private boolean isFeatured = false;
+
+    // --- 3. THỐNG KÊ (INVENTORY & SALES) ---
+    @Column(name = "total_stock")
+    private Integer totalStock = 0;
+
+    @Column(name = "sold_quantity")
+    private Integer soldQuantity = 0;
+
+    @Column(name = "view_count")
+    private Integer viewCount = 0;
+
+    // --- 4. SEO ---
+    @Column(name = "meta_title")
+    private String metaTitle;
+
+    @Column(name = "meta_description", columnDefinition = "TEXT")
+    private String metaDescription;
 
     // --- CÁC CỘT JSON (Yêu cầu Hibernate 6 + Jackson) ---
-    
-    @Convert(converter = StringListConverter.class) 
+
+    @Convert(converter = StringListConverter.class)
     @Column(name = "available_rams", columnDefinition = "json")
     private List<String> availableRams; // Để lưu được ["8 GB", "12 GB"]
 
