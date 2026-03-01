@@ -28,15 +28,15 @@ public class AdminOrderController {
         return ResponseEntity.ok(ApiResponse.success("Lấy danh sách thành công", orders));
     }
 
-    // 2. Cập nhật trạng thái
-    @PutMapping("/{id}/status")
+    @PutMapping("/{id}/status") 
     public ResponseEntity<ApiResponse<OrderResponse>> updateStatus(
             @PathVariable Long id, 
             @RequestBody Map<String, String> request) {
         
         try {
             String newStatus = request.get("status");
-            OrderResponse updatedOrder = orderService.updateOrderStatus(id, newStatus);
+            // 🔥 ĐÃ THÊM "ADMIN" VÀO ĐÂY
+            OrderResponse updatedOrder = orderService.updateOrderStatus(id, newStatus, "ADMIN");
             return ResponseEntity.ok(ApiResponse.success("Cập nhật thành công", updatedOrder));
         } catch (Exception e) {
             return ResponseEntity.badRequest().body(ApiResponse.error(400, e.getMessage()));

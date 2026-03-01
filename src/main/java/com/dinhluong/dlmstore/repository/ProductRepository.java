@@ -49,5 +49,11 @@ public interface ProductRepository extends JpaRepository<Product, Long>, JpaSpec
 
     long countByIsFeaturedTrue();
 
+    @Query("SELECT p FROM Product p " +
+           "WHERE p.isFeatured = true " +
+           "AND p.status = 'ACTIVE' " +
+           "ORDER BY p.soldQuantity DESC")
+    List<Product> findFeaturedProducts(Pageable pageable);
+
     
 }

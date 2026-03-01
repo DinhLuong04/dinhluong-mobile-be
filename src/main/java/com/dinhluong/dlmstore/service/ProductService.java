@@ -16,6 +16,7 @@ import lombok.RequiredArgsConstructor;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
@@ -370,6 +371,19 @@ public class ProductService {
 
         productRepository.saveAll(products);
         System.out.println("✅ [AUTO-JOB] SUCCESS! Updated " + count + " products.");
+    }
+
+    // Lấy danh sách sản phẩm Nổi Bật (Hot Sale)
+    public List<ProductCardResponse> getFeaturedProducts(int limit) {
+        // Dùng Pageable để giới hạn số lượng lấy ra (VD: limit = 10)
+        Pageable pageable = PageRequest.of(0, limit);
+        
+        List<Product> featuredProducts = productRepository.findFeaturedProducts(pageable);
+        
+        // Giả định bạn đã có sẵn hàm mapToProductCardResponse trong Service này
+        return featuredProducts.stream()
+                .map(productMapper::toCardResponse)
+                .collect(Collectors.toList());
     }
 
 

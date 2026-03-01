@@ -9,6 +9,7 @@ import java.util.Optional;
 
 @Repository
 public interface CategoryRepository extends JpaRepository<Category, Long> {
-    Optional<Category> findBySlug(String slug);
-    List<Category> findByParentIsNull(); // Lấy danh sách các danh mục gốc (Level cao nhất)
+   // Lấy các danh mục gốc (không có cha)
+    List<Category> findByParentIsNull();
+    boolean existsBySlug(String slug);
 }

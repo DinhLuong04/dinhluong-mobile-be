@@ -16,6 +16,7 @@ public class AppConstants {
             "/api/admin/vouchers/**",
             "/api/admin/users/**",
             "/api/admin/reviews/**",
+            "/api/admin/categories/**",
             "/api/admin/**"
     };
 

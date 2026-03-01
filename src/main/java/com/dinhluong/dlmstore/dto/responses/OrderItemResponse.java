@@ -11,7 +11,7 @@ import java.util.List;
 public class OrderItemResponse {
    private Long id;
     private Long productVariantId; 
-    
+    private String slug;
     // 🔥 Thêm trường productName để lưu tên sản phẩm chính
     private String productName;
     

@@ -112,4 +112,11 @@ public class ProductController {
         productService.updateAllProductKeywords();
         return ApiResponse.success("Cập nhật thành công danh sách sản phẩm thành công", null);
     }
+    @GetMapping("/featured")
+    public ApiResponse<List<ProductCardResponse>> getFeaturedProducts(
+            @RequestParam(defaultValue = "10") int limit) {
+            
+        List<ProductCardResponse> result = productService.getFeaturedProducts(limit);
+        return ApiResponse.success("Lấy danh sách sản phẩm nổi bật thành công", result);
+    }
 }

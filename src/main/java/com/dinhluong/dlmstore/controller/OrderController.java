@@ -246,6 +246,29 @@ public class OrderController {
         }
     }
 
+    @PutMapping("/{orderId}/cancel")
+    public ResponseEntity<ApiResponse<OrderResponse>> cancelMyOrder(
+            @PathVariable Long orderId,
+            @AuthenticationPrincipal CustomUserPrincipal currentUser) {
+        
+        try {
+            // Bước 1: Gọi hàm getOrderDetail để check bảo mật.
+            // Nếu đơn hàng không phải của User này, hàm getOrderDetail sẽ tự ném ra lỗi "Bạn không có quyền..."
+            orderService.getOrderDetail(orderId, currentUser.getId());
+
+            // Bước 2: Gọi hàm cập nhật trạng thái, truyền vào "CANCELLED" và "USER"
+            OrderResponse updatedOrder = orderService.updateOrderStatus(orderId, "CANCELLED", "USER");
+            
+            return ResponseEntity.ok(ApiResponse.success("Hủy đơn hàng thành công", updatedOrder));
+            
+        } catch (RuntimeException e) {
+            // Xử lý lỗi (Ví dụ: Đơn đã giao không thể hủy, hoặc lỗi không có quyền)
+            int errorCode = e.getMessage().contains("quyền") ? 403 : 400;
+            return ResponseEntity.status(errorCode)
+                    .body(ApiResponse.error(errorCode, e.getMessage()));
+        }
+    }
+
 
     
 }

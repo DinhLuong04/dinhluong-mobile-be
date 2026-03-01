@@ -1,10 +1,12 @@
 package com.dinhluong.dlmstore.service;
 
 import com.dinhluong.dlmstore.dto.requests.BulkStockUpdateRequest;
+import com.dinhluong.dlmstore.dto.requests.ProductComboRequest;
 import com.dinhluong.dlmstore.dto.requests.ProductRequest;
 import com.dinhluong.dlmstore.dto.responses.ProductResponse;
 import com.dinhluong.dlmstore.dto.responses.ProductVariantResponse;
 import com.dinhluong.dlmstore.entity.Product;
+import com.dinhluong.dlmstore.entity.ProductCombo;
 import com.dinhluong.dlmstore.entity.ProductHighlightSpec;
 import com.dinhluong.dlmstore.entity.ProductImage;
 import com.dinhluong.dlmstore.entity.ProductSpecValue;
@@ -13,6 +15,7 @@ import com.dinhluong.dlmstore.entity.Enums.ProductStatus;
 import com.dinhluong.dlmstore.entity.Enums.ProductType;
 import com.dinhluong.dlmstore.repository.BrandRepository;
 import com.dinhluong.dlmstore.repository.CategoryRepository;
+import com.dinhluong.dlmstore.repository.ProductComboRepository;
 import com.dinhluong.dlmstore.repository.ProductRepository;
 import com.dinhluong.dlmstore.repository.ProductVariantRepository;
 import com.dinhluong.dlmstore.repository.SpecAttributeRepository;
@@ -39,6 +42,7 @@ public class AdminProductService {
     private final ProductService productService; 
     private final CloudinaryService cloudinaryService;
     private final ProductVariantRepository productVariantRepository;
+   
     // [BỔ SUNG] Repository để tìm SpecAttribute khi lưu ProductSpecValue
     private final SpecAttributeRepository specAttributeRepository;
 
@@ -563,5 +567,7 @@ public class AdminProductService {
         product.setTotalStock(newTotalStock);
         productRepository.save(product);
     }
+
+    
     
 }
