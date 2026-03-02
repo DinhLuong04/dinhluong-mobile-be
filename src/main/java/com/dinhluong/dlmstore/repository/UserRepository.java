@@ -1,5 +1,6 @@
 package com.dinhluong.dlmstore.repository;
 
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 
@@ -10,9 +11,10 @@ import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 import com.dinhluong.dlmstore.entity.Users;
+
 @Repository
 public interface UserRepository extends JpaRepository<Users, Long> {
-       // Tìm user theo email (login)
+    // Tìm user theo email (login)
     Optional<Users> findByEmail(String email);
 
     // Check tồn tại email (register)
@@ -22,10 +24,10 @@ public interface UserRepository extends JpaRepository<Users, Long> {
 
     // Login kèm role (tránh LazyInitializationException)
     @Query("""
-        SELECT u FROM Users u
-        JOIN FETCH u.role
-        WHERE u.email = :email
-    """)
+                SELECT u FROM Users u
+                JOIN FETCH u.role
+                WHERE u.email = :email
+            """)
     Optional<Users> findByEmailWithRole(@Param("email") String email);
 
     // Lấy user theo provider + providerId (Google login)
@@ -45,11 +47,14 @@ public interface UserRepository extends JpaRepository<Users, Long> {
     Optional<Users> findById(@Param("id") Long id);
 
     @Query("SELECT u FROM Users u WHERE " +
-           "(:keyword IS NULL OR :keyword = '' OR " +
-           "LOWER(u.fullName) LIKE LOWER(CONCAT('%', :keyword, '%')) OR " +
-           "LOWER(u.email) LIKE LOWER(CONCAT('%', :keyword, '%')) OR " +
-           "u.phone LIKE CONCAT('%', :keyword, '%')) AND " +
-           "(:isEnabled IS NULL OR u.isEnabled = :isEnabled) " +
-           "ORDER BY u.createdAt DESC")
+            "(:keyword IS NULL OR :keyword = '' OR " +
+            "LOWER(u.fullName) LIKE LOWER(CONCAT('%', :keyword, '%')) OR " +
+            "LOWER(u.email) LIKE LOWER(CONCAT('%', :keyword, '%')) OR " +
+            "u.phone LIKE CONCAT('%', :keyword, '%')) AND " +
+            "(:isEnabled IS NULL OR u.isEnabled = :isEnabled) " +
+            "ORDER BY u.createdAt DESC")
     List<Users> searchAdminUsers(@Param("keyword") String keyword, @Param("isEnabled") Boolean isEnabled);
+
+    @Query("SELECT COUNT(u) FROM Users u WHERE u.createdAt >= :startDate AND u.createdAt <= :endDate")
+    long countNewUsers(@Param("startDate") LocalDateTime startDate, @Param("endDate") LocalDateTime endDate);
 }

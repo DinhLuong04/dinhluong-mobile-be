@@ -12,6 +12,8 @@ import com.dinhluong.dlmstore.entity.Product;
 import com.dinhluong.dlmstore.entity.ProductVariant;
 import com.dinhluong.dlmstore.entity.UserVoucher;
 import com.dinhluong.dlmstore.entity.Voucher;
+import com.dinhluong.dlmstore.repository.CartItemRepository;
+import com.dinhluong.dlmstore.repository.CartRepository;
 import com.dinhluong.dlmstore.repository.OrderItemRepository;
 import com.dinhluong.dlmstore.repository.OrderRepository;
 
@@ -37,6 +39,9 @@ import java.time.LocalDateTime;
 import java.util.ArrayList;
 
 import java.util.List;
+
+import com.dinhluong.dlmstore.entity.Cart;
+import com.dinhluong.dlmstore.entity.CartItem;
 import com.dinhluong.dlmstore.entity.Notification;
 import java.util.stream.Collectors;
 
@@ -57,6 +62,8 @@ public class OrderService {
 
     private final ProductRepository productRepository;
     private final NotificationService notificationService;
+    private final CartRepository cartRepository;
+    private final CartItemRepository cartItemRepository;
     @Transactional
 
     public Order createOrder(PlaceOrderRequest request) {
@@ -98,62 +105,47 @@ public class OrderService {
                     .orElseThrow(() -> new RuntimeException(
 
                             "Không tìm thấy sản phẩm variant có ID: " + itemDTO.getVariantId()));
+            
+            // 🔥 1. CHỐT CHẶN: TRỪ KHO SẢN PHẨM CHÍNH NGAY LÚC TẠO ĐƠN (Sẽ trigger Optimistic Locking nếu có tranh chấp)
+            decreaseStock(mainVariant.getId(), itemDTO.getQuantity(), "Sản phẩm " + mainVariant.getProduct().getName());
 
-            totalAmount = totalAmount.add(
-
-                    mainVariant.getPrice().multiply(new BigDecimal(itemDTO.getQuantity())));
+            totalAmount = totalAmount.add(mainVariant.getPrice().multiply(new BigDecimal(itemDTO.getQuantity())));
 
             List<ComboItemDetail> comboDetails = new ArrayList<>();
 
             if (itemDTO.getComboIds() != null && !itemDTO.getComboIds().isEmpty()) {
-
                 for (Long comboId : itemDTO.getComboIds()) {
-
-                    if (comboId == null)
-                        continue;
+                    if (comboId == null) continue;
 
                     Product comboVariant = productRepository.findById(comboId)
-
                             .orElseThrow(() -> new RuntimeException("Không tìm thấy sản phẩm combo có ID: " + comboId));
 
+                    // 🔥 2. TRỪ KHO LUÔN CHO COMBO/PHỤ KIỆN
+                    String accessorySku = "PK-" + comboVariant.getId();
+                    ProductVariant accessoryRealVariant = productVariantRepository.findBySku(accessorySku)
+                            .orElseThrow(() -> new RuntimeException("Không tìm thấy phụ kiện với SKU: " + accessorySku));
+                    
+                    decreaseStock(accessoryRealVariant.getId(), itemDTO.getQuantity(), "Phụ kiện: " + comboVariant.getName());
+
                     ComboItemDetail detail = new ComboItemDetail();
-
                     detail.setVariantId(comboVariant.getId());
-
                     detail.setPrice(comboVariant.getDisplayPrice());
-
                     detail.setName(comboVariant.getName());
-
                     detail.setImageUrl(comboVariant.getThumbnailUrl());
-
                     comboDetails.add(detail);
-
-                    totalAmount = totalAmount.add(
-
-                            comboVariant.getDisplayPrice().multiply(new BigDecimal(itemDTO.getQuantity())));
-
+                    totalAmount = totalAmount.add(comboVariant.getDisplayPrice().multiply(new BigDecimal(itemDTO.getQuantity())));
                 }
-
             }
 
             OrderItem mainItem = OrderItem.builder()
-
                     .orderId(order.getId())
-
                     .productVariantId(mainVariant.getId())
-
                     .quantity(itemDTO.getQuantity())
-
                     .priceAtPurchase(mainVariant.getPrice())
-
                     .comboItems(comboDetails)
-
                     .build();
-
             orderItemRepository.save(mainItem);
-
         }
-
         // 3. Xử lý Voucher (🔥 Đã cập nhật)
 
         BigDecimal finalPrice = totalAmount;
@@ -268,13 +260,34 @@ public class OrderService {
                 .build();
 
         paymentRepository.save(payment);
+
+        // 🔥 BƯỚC 6: XÓA CÁC SẢN PHẨM ĐÃ ĐẶT KHỎI GIỎ HÀNG
+        Cart cart = cartRepository.findByUserId(request.getUserId()).orElse(null);
+        if (cart != null) {
+            for (PlaceOrderItemRequest itemDTO : request.getItems()) {
+                // Tìm cartItem chính
+                CartItem cartItem = cartItemRepository
+                        .findByCartIdAndProductVariantIdAndParentIdIsNull(cart.getId(), itemDTO.getVariantId())
+                        .orElse(null);
+                
+                if (cartItem != null) {
+                    // Xóa các phụ kiện/combo đi kèm trong giỏ hàng (parentId = id của cartItem chính)
+                    List<CartItem> combosInCart = cartItemRepository.findByParentId(cartItem.getId());
+                    cartItemRepository.deleteAll(combosInCart);
+                    
+                    // Xóa item chính
+                    cartItemRepository.delete(cartItem);
+                }
+            }
+        }
+
         // 🔥 THÊM ĐOẠN NÀY ĐỂ BẮN THÔNG BÁO NGAY KHI ĐẶT HÀNG THÀNH CÔNG
-        String message = "Đặt hàng thành công! Đơn hàng #" + savedOrder.getId() + " của bạn đang chờ hệ thống xác nhận.";
+        String message = "Đặt hàng thành công! Đơn hàng #" + savedOrder.getId()
+                + " của bạn đang chờ hệ thống xác nhận.";
         notificationService.createAndSendNotification(
-                savedOrder.getUserId(), 
-                Notification.NotificationType.ORDER_STATUS, 
-                message
-        );
+                savedOrder.getUserId(),
+                Notification.NotificationType.ORDER_STATUS,
+                message);
         return savedOrder;
 
     }
@@ -319,7 +332,7 @@ public class OrderService {
 
             String productName = (variant != null && variant.getProduct() != null) ? variant.getProduct().getName()
                     : "Sản phẩm không xác định";
-                    String slug = (variant != null && variant.getProduct() != null) ? variant.getProduct().getSlug() : "";
+            String slug = (variant != null && variant.getProduct() != null) ? variant.getProduct().getSlug() : "";
             String imageUrl = (variant != null && variant.getProduct() != null) ? variant.getProduct().getThumbnailUrl()
                     : "";
             String variantName = (variant != null)
@@ -357,10 +370,11 @@ public class OrderService {
         List<OrderItem> orderItems = orderItemRepository.findByOrderId(order.getId());
         List<OrderItemResponse> itemResponses = orderItems.stream().map(item -> {
             ProductVariant variant = productVariantRepository.findById(item.getProductVariantId()).orElse(null);
-            
-            String productName = (variant != null && variant.getProduct() != null) ? variant.getProduct().getName() : "Sản phẩm không xác định";
+
+            String productName = (variant != null && variant.getProduct() != null) ? variant.getProduct().getName()
+                    : "Sản phẩm không xác định";
             String slug = (variant != null && variant.getProduct() != null) ? variant.getProduct().getSlug() : "";
-            
+
             return OrderItemResponse.builder()
                     .id(item.getId())
                     .productName(productName)
@@ -435,7 +449,7 @@ public class OrderService {
         }).collect(Collectors.toList());
     }
 
-  @Transactional
+    @Transactional
     public OrderResponse updateOrderStatus(Long orderId, String newStatusStr, String actionBy) {
         Order order = orderRepository.findById(orderId)
                 .orElseThrow(() -> new RuntimeException("Không tìm thấy đơn hàng"));
@@ -453,38 +467,23 @@ public class OrderService {
         // 2. Lấy danh sách sản phẩm trong đơn hàng
         List<OrderItem> items = orderItemRepository.findByOrderId(orderId);
 
-        // ==============================================================
-        // KỊCH BẢN A: Chuyển sang PROCESSING -> TRỪ KHO (Cả Chính & Phụ kiện)
-        // ==============================================================
-        if (currentStatus == Order.OrderStatus.PENDING && newStatus == Order.OrderStatus.PROCESSING) {
-            for (OrderItem item : items) {
-                // Trừ kho sản phẩm chính
-                decreaseStock(item.getProductVariantId(), item.getQuantity(), "Sản phẩm chính");
-
-                // Trừ kho phụ kiện (nếu có)
-                if (item.getComboItems() != null && !item.getComboItems().isEmpty()) {
-                    for (ComboItemDetail combo : item.getComboItems()) {
-                        String accessorySku = "PK-" + combo.getVariantId();
-                        ProductVariant accessoryVariant = productVariantRepository.findBySku(accessorySku)
-                                .orElseThrow(() -> new RuntimeException("Không tìm thấy phụ kiện với SKU: " + accessorySku));
-                        decreaseStock(accessoryVariant.getId(), item.getQuantity(), "Phụ kiện: " + combo.getName());
-                    }
-                }
-            }
-        }
+        
 
         // ==============================================================
         // KỊCH BẢN B: HỦY ĐƠN HOẶC HOÀN HÀNG -> CỘNG LẠI KHO
         // ==============================================================
-        else if (newStatus == Order.OrderStatus.CANCELLED || newStatus == Order.OrderStatus.RETURNED) {
-            if (currentStatus == Order.OrderStatus.PROCESSING || currentStatus == Order.OrderStatus.SHIPPED) {
+        if (newStatus == Order.OrderStatus.CANCELLED || newStatus == Order.OrderStatus.RETURNED) {
+           if (currentStatus == Order.OrderStatus.PENDING || 
+                currentStatus == Order.OrderStatus.PROCESSING || 
+                currentStatus == Order.OrderStatus.SHIPPED) {
                 for (OrderItem item : items) {
                     increaseStock(item.getProductVariantId(), item.getQuantity());
 
                     if (item.getComboItems() != null && !item.getComboItems().isEmpty()) {
                         for (ComboItemDetail combo : item.getComboItems()) {
                             String accessorySku = "PK-" + combo.getVariantId();
-                            ProductVariant accessoryVariant = productVariantRepository.findBySku(accessorySku).orElse(null);
+                            ProductVariant accessoryVariant = productVariantRepository.findBySku(accessorySku)
+                                    .orElse(null);
                             if (accessoryVariant != null) {
                                 increaseStock(accessoryVariant.getId(), item.getQuantity());
                             }
@@ -497,39 +496,46 @@ public class OrderService {
         // 3. Cập nhật trạng thái mới
         order.setStatus(newStatus);
         Order updatedOrder = orderRepository.save(order);
-        
+
         // 4. 🔥 TẠO VÀ GỬI THÔNG BÁO CHO USER (Đã FIX lỗi truyền tham số)
         String vnStatus = translateStatus(newStatus);
-        
+
         // Truyền đầy đủ 4 tham số, bao gồm cả 'actionBy'
         String message = generateNotificationMessage(newStatus, orderId, vnStatus, actionBy);
-        
+
         // Nếu có message thì mới gửi
         if (message != null && !message.isEmpty()) {
             notificationService.createAndSendNotification(
-                    updatedOrder.getUserId(), 
-                    Notification.NotificationType.ORDER_STATUS, 
-                    message
-            );
+                    updatedOrder.getUserId(),
+                    Notification.NotificationType.ORDER_STATUS,
+                    message);
         }
-        
+
         return mapToOrderResponse(updatedOrder);
     }
 
     // Các hàm trợ giúp giữ nguyên
     private String translateStatus(Order.OrderStatus status) {
         switch (status) {
-            case PENDING: return "Chờ xác nhận";
-            case PROCESSING: return "Đang xử lý (Chờ lấy hàng)";
-            case SHIPPED: return "Đang giao hàng";
-            case DELIVERED: return "Đã giao thành công";
-            case RETURNED: return "Chuyển hoàn (Trả hàng/Bom)";
-            case CANCELLED: return "Đã hủy";
-            default: return "Không xác định";
+            case PENDING:
+                return "Chờ xác nhận";
+            case PROCESSING:
+                return "Đang xử lý (Chờ lấy hàng)";
+            case SHIPPED:
+                return "Đang giao hàng";
+            case DELIVERED:
+                return "Đã giao thành công";
+            case RETURNED:
+                return "Chuyển hoàn (Trả hàng/Bom)";
+            case CANCELLED:
+                return "Đã hủy";
+            default:
+                return "Không xác định";
         }
     }
 
-    private String generateNotificationMessage(Order.OrderStatus status, Long orderId, String vnStatus, String actionBy) {
+    private String generateNotificationMessage(Order.OrderStatus status, Long orderId, String vnStatus,
+            String actionBy) {
         switch (status) {
             case PROCESSING:
                 return "Đơn hàng #" + orderId + " đã được xác nhận và đang được chuẩn bị đóng gói.";
@@ -542,10 +548,12 @@ public class OrderService {
                 if ("USER".equalsIgnoreCase(actionBy)) {
                     return "Đơn hàng #" + orderId + " đã được hủy thành công theo yêu cầu của bạn.";
                 } else {
-                    return "Rất tiếc! Đơn hàng #" + orderId + " đã bị hủy bởi DinhLuongMobile. Vui lòng liên hệ CSKH nếu có thắc mắc.";
+                    return "Rất tiếc! Đơn hàng #" + orderId
+                            + " đã bị hủy bởi DinhLuongMobile. Vui lòng liên hệ CSKH nếu có thắc mắc.";
                 }
             case RETURNED:
-                return "Giao hàng không thành công. Đơn hàng #" + orderId + " đang được chuyển hoàn về kho. Nếu bạn đã thanh toán trước, hãy liên hệ CSKH để được hoàn tiền.";
+                return "Giao hàng không thành công. Đơn hàng #" + orderId
+                        + " đang được chuyển hoàn về kho. Nếu bạn đã thanh toán trước, hãy liên hệ CSKH để được hoàn tiền.";
             default:
                 return "Đơn hàng #" + orderId + " đã chuyển sang trạng thái: " + vnStatus;
         }
@@ -604,7 +612,5 @@ public class OrderService {
             productRepository.save(product);
         }
     }
-
-   
 
 }

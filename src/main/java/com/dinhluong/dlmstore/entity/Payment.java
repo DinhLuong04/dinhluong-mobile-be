@@ -40,7 +40,7 @@ public class Payment {
     private LocalDateTime paidAt;
 
     public enum PaymentMethod {
-        COD, VNPAY, MOMO
+        COD, VNPAY
     }
 
     public enum PaymentStatus {

@@ -20,7 +20,13 @@ public class NotificationService {
     public List<Notification> getUserNotifications(Long userId) {
         return notificationRepository.findByUserIdOrderByCreatedAtDesc(userId);
     }
-
+    public void markAsRead(Long notificationId, Long userId) {
+    Notification notification = notificationRepository.findByIdAndUserId(notificationId, userId)
+        .orElseThrow(() -> new RuntimeException("Không tìm thấy thông báo"));
+    
+    notification.setRead(true);
+    notificationRepository.save(notification);
+}
     // Hàm đánh dấu đã đọc
     @Transactional
     public void markAllAsRead(Long userId) {

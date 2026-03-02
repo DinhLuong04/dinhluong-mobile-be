@@ -7,6 +7,7 @@ import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 import java.math.BigDecimal;
+import java.time.LocalDateTime;
 import java.util.List;
 
 @Repository
@@ -49,5 +50,16 @@ public interface OrderRepository extends JpaRepository<Order, Long> {
        long countByUserId(Long userId);
 
        @Query("SELECT SUM(o.totalAmount) FROM Order o WHERE o.userId = :userId AND o.status = :status")
-BigDecimal getTotalSpentByUserIdAndStatus(@Param("userId") Long userId, @Param("status") Order.OrderStatus status);
+       BigDecimal getTotalSpentByUserIdAndStatus(@Param("userId") Long userId,
+                     @Param("status") Order.OrderStatus status);
+
+       @Query("SELECT SUM(o.totalAmount) FROM Order o WHERE o.status = 'DELIVERED' AND o.createdAt >= :startDate AND o.createdAt <= :endDate")
+       BigDecimal sumRevenue(@Param("startDate") LocalDateTime startDate, @Param("endDate") LocalDateTime endDate);
+
+       @Query("SELECT COUNT(o) FROM Order o WHERE o.status = 'DELIVERED' AND o.createdAt >= :startDate AND o.createdAt <= :endDate")
+       long countCompletedOrders(@Param("startDate") LocalDateTime startDate, @Param("endDate") LocalDateTime endDate);
+
+       @Query("SELECT o FROM Order o WHERE o.status = 'DELIVERED' AND o.createdAt >= :startDate AND o.createdAt <= :endDate ORDER BY o.createdAt ASC")
+       List<Order> findDeliveredOrdersForTrends(@Param("startDate") LocalDateTime startDate,
+                     @Param("endDate") LocalDateTime endDate);
 }

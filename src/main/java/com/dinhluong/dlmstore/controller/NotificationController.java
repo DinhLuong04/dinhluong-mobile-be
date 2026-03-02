@@ -19,6 +19,12 @@ public class NotificationController {
     public ResponseEntity<?> getMyNotifications(@AuthenticationPrincipal CustomUserPrincipal user) {
         return ResponseEntity.ok(ApiResponse.success("Thành công", notificationService.getUserNotifications(user.getId())));
     }
+    @PutMapping("/{id}/read")
+    public ResponseEntity<?> markAsRead(@PathVariable Long id, @AuthenticationPrincipal CustomUserPrincipal user) {
+        // Truyền cả user.getId() để đảm bảo user chỉ có thể đọc thông báo của chính họ
+        notificationService.markAsRead(id, user.getId()); 
+        return ResponseEntity.ok(ApiResponse.success("Đã đọc thông báo", null));
+    }
 
     @PutMapping("/read-all")
     public ResponseEntity<?> markAllRead(@AuthenticationPrincipal CustomUserPrincipal user) {

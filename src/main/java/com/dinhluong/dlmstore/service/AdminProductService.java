@@ -224,17 +224,27 @@ public class AdminProductService {
             }
         }
 
-        // Xử lý upload ảnh mới từ file
+       // Xử lý upload ảnh mới từ file (ĐÃ NÂNG CẤP ĐA LUỒNG - PARALLEL STREAM)
         if (galleryFiles != null && !galleryFiles.isEmpty()) {
-            for (MultipartFile file : galleryFiles) {
-                if (!file.isEmpty()) {
-                    String uploadedUrl = cloudinaryService.uploadFile(file);
-                    ProductImage img = new ProductImage();
-                    img.setImageUrl(uploadedUrl);
-                    img.setSortOrder(currentSortOrder++);
-                    img.setProduct(product);
-                    product.getImages().add(img);
-                }
+            // Bước 1: Bắn đồng loạt các file lên Cloudinary cùng 1 lúc
+            List<String> uploadedUrls = galleryFiles.parallelStream()
+                    .filter(file -> !file.isEmpty())
+                    .map(file -> {
+                        try {
+                            return cloudinaryService.uploadFile(file);
+                        } catch (IOException e) {
+                            throw new RuntimeException("Lỗi trong quá trình upload ảnh đa luồng: " + e.getMessage());
+                        }
+                    })
+                    .collect(Collectors.toList());
+
+            // Bước 2: Chờ tất cả trả link về xong thì mới add vào Entity (giữ nguyên thứ tự)
+            for (String url : uploadedUrls) {
+                ProductImage img = new ProductImage();
+                img.setImageUrl(url);
+                img.setSortOrder(currentSortOrder++);
+                img.setProduct(product);
+                product.getImages().add(img);
             }
         }
 
@@ -353,17 +363,27 @@ public class AdminProductService {
             product.getImages().clear();
         }
 
-        // Upload thêm ảnh mới
+       // Xử lý upload ảnh mới từ file (ĐÃ NÂNG CẤP ĐA LUỒNG - PARALLEL STREAM)
         if (galleryFiles != null && !galleryFiles.isEmpty()) {
-            for (MultipartFile file : galleryFiles) {
-                if (!file.isEmpty()) {
-                    String uploadedUrl = cloudinaryService.uploadFile(file);
-                    ProductImage img = new ProductImage();
-                    img.setImageUrl(uploadedUrl);
-                    img.setSortOrder(currentSortOrder++);
-                    img.setProduct(product);
-                    product.getImages().add(img);
-                }
+            // Bước 1: Bắn đồng loạt các file lên Cloudinary cùng 1 lúc
+            List<String> uploadedUrls = galleryFiles.parallelStream()
+                    .filter(file -> !file.isEmpty())
+                    .map(file -> {
+                        try {
+                            return cloudinaryService.uploadFile(file);
+                        } catch (IOException e) {
+                            throw new RuntimeException("Lỗi trong quá trình upload ảnh đa luồng: " + e.getMessage());
+                        }
+                    })
+                    .collect(Collectors.toList());
+
+            // Bước 2: Chờ tất cả trả link về xong thì mới add vào Entity (giữ nguyên thứ tự)
+            for (String url : uploadedUrls) {
+                ProductImage img = new ProductImage();
+                img.setImageUrl(url);
+                img.setSortOrder(currentSortOrder++);
+                img.setProduct(product);
+                product.getImages().add(img);
             }
         }
 
@@ -503,6 +523,12 @@ public class AdminProductService {
         // Gọi lệnh xóa (Hibernate sẽ tự động kích hoạt @SQLDelete để UPDATE is_deleted = true)
         productRepository.delete(product); 
     }
+
+
+    public String uploadSingleImage(MultipartFile file) throws IOException {
+        return cloudinaryService.uploadFile(file);
+    }
+
 
     // =========================================================
     // API BẬT/TẮT SẢN PHẨM NỔI BẬT (GHIM TRANG CHỦ)

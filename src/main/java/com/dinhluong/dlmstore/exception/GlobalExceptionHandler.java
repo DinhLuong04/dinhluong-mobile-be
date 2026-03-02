@@ -3,6 +3,7 @@ package com.dinhluong.dlmstore.exception;
 import com.dinhluong.dlmstore.dto.ApiResponse;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.orm.ObjectOptimisticLockingFailureException;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.web.bind.annotation.*;
@@ -19,6 +20,19 @@ public class GlobalExceptionHandler {
                 "Email hoặc mật khẩu không đúng"
         );
         return new ResponseEntity<>(response, HttpStatus.UNAUTHORIZED);
+    }
+
+    //  ĐÃ SỬA LẠI CONSTRUCTOR VÀ HTTP STATUS CODE (409) CHO CHUẨN
+    @ExceptionHandler(ObjectOptimisticLockingFailureException.class)
+    public ResponseEntity<ApiResponse<Object>> handleOptimisticLockingFailureException(ObjectOptimisticLockingFailureException ex) {
+        ApiResponse<Object> response = new ApiResponse<>(
+                "error",
+                HttpStatus.CONFLICT.value(), // Dùng 409 Conflict là chuẩn nhất cho lỗi đồng bộ
+                "Sản phẩm bạn chọn vừa có người khác nhanh tay mua mất. Vui lòng tải lại giỏ hàng!",
+                new Date(),
+                null
+        );
+        return new ResponseEntity<>(response, HttpStatus.CONFLICT);
     }
 
     @ExceptionHandler(AppException.class)

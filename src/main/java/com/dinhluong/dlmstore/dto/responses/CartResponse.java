@@ -38,7 +38,7 @@ public class CartResponse {
         // --- Trạng thái (UI State) ---
         private Integer quantity;     // Số lượng
         private Boolean checked = true; // Mặc định trả về true để FE tự động tích chọn
-
+        private Integer stockQuantity;
         // --- Dữ liệu lồng nhau ---
         private List<CartComboItemDto> combos; // Danh sách phụ kiện đi kèm
     }
@@ -52,6 +52,7 @@ public class CartResponse {
         private BigDecimal originalPrice; // Giá gốc phụ kiện (nếu có)
         private Boolean checked =false;
         private BigDecimal discountAmount; // Số tiền được giảm
+        private Integer stockQuantity;
         private String note;    // Mặc định tự động tích
     }
 }

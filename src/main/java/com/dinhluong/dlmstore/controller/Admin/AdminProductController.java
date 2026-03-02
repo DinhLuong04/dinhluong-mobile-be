@@ -99,7 +99,17 @@ public class AdminProductController {
             // return ResponseEntity.badRequest().body(ApiResponse.error("400 - Lỗi: " + e.getMessage()));
         }
     }
-
+    // API UPLOAD ẢNH TỨC THỜI (SILENT UPLOAD)
+    @PostMapping(value = "/upload", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    public ResponseEntity<?> uploadSingleImage(@RequestParam("file") MultipartFile file) {
+        try {
+            // Gọi hàm vừa tạo bên Service
+            String uploadedUrl = adminProductService.uploadSingleImage(file);
+            return ResponseEntity.ok(ApiResponse.success("Upload thành công", uploadedUrl));
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(ApiResponse.error(400, "Lỗi upload: " + e.getMessage()));
+        }
+    }
     // CẬP NHẬT SẢN PHẨM (MULTIPART)
     @PutMapping(value = "/{id}", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ResponseEntity<?> updateProduct(
