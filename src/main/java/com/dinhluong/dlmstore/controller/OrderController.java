@@ -246,18 +246,22 @@ public class OrderController {
         }
     }
 
-    @PutMapping("/{orderId}/cancel")
+   @PutMapping("/{orderId}/cancel")
     public ResponseEntity<ApiResponse<OrderResponse>> cancelMyOrder(
             @PathVariable Long orderId,
+            @RequestBody(required = false) Map<String, String> request, // 🔥 BƯỚC 1: THÊM REQUEST BODY NÀY
             @AuthenticationPrincipal CustomUserPrincipal currentUser) {
         
         try {
-            // Bước 1: Gọi hàm getOrderDetail để check bảo mật.
+            // 🔥 BƯỚC 2: LẤY LÝ DO TỪ FE GỬI LÊN (Nếu có)
+            String reason = (request != null && request.containsKey("reason")) ? request.get("reason") : "";
+
+            // Bước 3: Gọi hàm getOrderDetail để check bảo mật.
             // Nếu đơn hàng không phải của User này, hàm getOrderDetail sẽ tự ném ra lỗi "Bạn không có quyền..."
             orderService.getOrderDetail(orderId, currentUser.getId());
 
-            // Bước 2: Gọi hàm cập nhật trạng thái, truyền vào "CANCELLED" và "USER"
-            OrderResponse updatedOrder = orderService.updateOrderStatus(orderId, "CANCELLED", "USER");
+            // Bước 4: Gọi hàm cập nhật trạng thái, TRUYỀN THÊM BIẾN REASON VÀO GIỮA "CANCELLED" VÀ "USER"
+            OrderResponse updatedOrder = orderService.updateOrderStatus(orderId, "CANCELLED", reason, "USER");
             
             return ResponseEntity.ok(ApiResponse.success("Hủy đơn hàng thành công", updatedOrder));
             

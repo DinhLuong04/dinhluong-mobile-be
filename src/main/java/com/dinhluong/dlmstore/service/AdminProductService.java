@@ -281,6 +281,10 @@ public class AdminProductService {
         }
 
         product.setSearchKeywords(productService.generateSearchKeywords(product));
+        int calculatedTotalStock = product.getVariants().stream()
+                .mapToInt(v -> v.getStockQuantity() != null ? v.getStockQuantity() : 0)
+                .sum();
+        product.setTotalStock(calculatedTotalStock);
         return productRepository.save(product);
     }
 
@@ -445,6 +449,10 @@ public class AdminProductService {
         }
 
         product.setSearchKeywords(productService.generateSearchKeywords(product));
+        int calculatedTotalStock = product.getVariants().stream()
+                .mapToInt(v -> v.getStockQuantity() != null ? v.getStockQuantity() : 0)
+                .sum();
+        product.setTotalStock(calculatedTotalStock);
         return productRepository.save(product); // Gọi 1 lần save() là Hibernate sẽ lo toàn bộ Update/Insert/Delete phía dưới
     }
 

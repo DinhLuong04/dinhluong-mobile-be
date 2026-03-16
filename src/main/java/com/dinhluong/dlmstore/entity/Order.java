@@ -44,7 +44,8 @@ public class Order {
 
     @Column(name = "created_at", updatable = false)
     private LocalDateTime createdAt;
-
+    @Column(name = "reason", columnDefinition = "TEXT")
+    private String reason;
     @Column(name = "updated_at")
     private LocalDateTime updatedAt;
 

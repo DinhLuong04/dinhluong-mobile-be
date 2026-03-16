@@ -23,6 +23,6 @@ public class OrderResponse {
     private String receiverAddress;
     private String paymentMethod;
     private String paymentStatus;
-    // Đổi 'I' hoa thành 'i' thường cho chuẩn quy tắc Java
+    private String reason;
     private List<OrderItemResponse> items;
 }

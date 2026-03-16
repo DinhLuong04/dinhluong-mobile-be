@@ -35,8 +35,8 @@ public class AdminOrderController {
         
         try {
             String newStatus = request.get("status");
-            // 🔥 ĐÃ THÊM "ADMIN" VÀO ĐÂY
-            OrderResponse updatedOrder = orderService.updateOrderStatus(id, newStatus, "ADMIN");
+            String reason = request.get("reason");
+            OrderResponse updatedOrder = orderService.updateOrderStatus(id, newStatus, reason, "ADMIN");
             return ResponseEntity.ok(ApiResponse.success("Cập nhật thành công", updatedOrder));
         } catch (Exception e) {
             return ResponseEntity.badRequest().body(ApiResponse.error(400, e.getMessage()));
