@@ -13,25 +13,23 @@ import java.util.Date;
 @ControllerAdvice
 public class GlobalExceptionHandler {
 
-    @ExceptionHandler({BadCredentialsException.class, UsernameNotFoundException.class})
+    @ExceptionHandler({ BadCredentialsException.class, UsernameNotFoundException.class })
     public ResponseEntity<ApiResponse<Object>> handleAuthenticationExceptions(RuntimeException ex) {
         ApiResponse<Object> response = ApiResponse.error(
                 HttpStatus.UNAUTHORIZED.value(),
-                "Email hoặc mật khẩu không đúng"
-        );
+                "Email hoặc mật khẩu không đúng");
         return new ResponseEntity<>(response, HttpStatus.UNAUTHORIZED);
     }
 
-    //  ĐÃ SỬA LẠI CONSTRUCTOR VÀ HTTP STATUS CODE (409) CHO CHUẨN
     @ExceptionHandler(ObjectOptimisticLockingFailureException.class)
-    public ResponseEntity<ApiResponse<Object>> handleOptimisticLockingFailureException(ObjectOptimisticLockingFailureException ex) {
+    public ResponseEntity<ApiResponse<Object>> handleOptimisticLockingFailureException(
+            ObjectOptimisticLockingFailureException ex) {
         ApiResponse<Object> response = new ApiResponse<>(
                 "error",
-                HttpStatus.CONFLICT.value(), // Dùng 409 Conflict là chuẩn nhất cho lỗi đồng bộ
+                HttpStatus.CONFLICT.value(),
                 "Sản phẩm bạn chọn vừa có người khác nhanh tay mua mất. Vui lòng tải lại giỏ hàng!",
                 new Date(),
-                null
-        );
+                null);
         return new ResponseEntity<>(response, HttpStatus.CONFLICT);
     }
 
@@ -39,11 +37,10 @@ public class GlobalExceptionHandler {
     public ResponseEntity<ApiResponse<Object>> handleAppException(AppException ex) {
         ApiResponse<Object> response = new ApiResponse<>(
                 ex.getCode(),
-                ex.getStatus().value(),  
+                ex.getStatus().value(),
                 ex.getMessage(),
                 new Date(),
-                null
-        );
+                null);
         return new ResponseEntity<>(response, ex.getStatus());
     }
 
@@ -54,8 +51,7 @@ public class GlobalExceptionHandler {
                 HttpStatus.INTERNAL_SERVER_ERROR.value(),
                 ex.getMessage(),
                 new Date(),
-                null
-        );
+                null);
         return new ResponseEntity<>(response, HttpStatus.INTERNAL_SERVER_ERROR);
     }
 }

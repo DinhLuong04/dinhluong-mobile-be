@@ -13,35 +13,24 @@ import com.dinhluong.dlmstore.entity.ProductCombo;
 public interface ProductComboRepository extends JpaRepository<ProductCombo, Long> {
 
     @Query("SELECT pc FROM ProductCombo pc " +
-           "JOIN FETCH pc.relatedProduct rp " +
-           "WHERE pc.mainProduct.slug = :slug " +
-           "AND rp.status = 'ACTIVE'") // Chỉ lấy sản phẩm đang kinh doanh
+            "JOIN FETCH pc.relatedProduct rp " +
+            "WHERE pc.mainProduct.slug = :slug " +
+            "AND rp.status = 'ACTIVE'")
     List<ProductCombo> findByMainProductSlug(@Param("slug") String slug);
 
-  @Query("""
-    SELECT pc
-    FROM ProductCombo pc
-    JOIN FETCH pc.relatedProduct rp
-    WHERE pc.mainProduct.id IN :ids
-""")
-List<ProductCombo> findByMainProductIds(@Param("ids") List<Long> ids);
+    @Query("""
+                SELECT pc
+                FROM ProductCombo pc
+                JOIN FETCH pc.relatedProduct rp
+                WHERE pc.mainProduct.id IN :ids
+            """)
+    List<ProductCombo> findByMainProductIds(@Param("ids") List<Long> ids);
 
-// ==============================================================
     // CÁC HÀM BỔ SUNG CHO TRANG QUẢN TRỊ ADMIN (COMBO MANAGER)
-    // ==============================================================
-
-    /**
-     * Lấy tất cả combo của 1 sản phẩm chính (Dùng trong Modal quản lý combo)
-     * Kèm JOIN FETCH để lấy tên và giá của Phụ kiện mà không bị N+1
-     */
     @Query("SELECT pc FROM ProductCombo pc " +
-           "JOIN FETCH pc.relatedProduct " +
-           "WHERE pc.mainProduct.id = :mainProductId")
+            "JOIN FETCH pc.relatedProduct " +
+            "WHERE pc.mainProduct.id = :mainProductId")
     List<ProductCombo> findByMainProductId(@Param("mainProductId") Long mainProductId);
 
-    /**
-     * Kiểm tra xem 1 phụ kiện đã được thêm vào combo của 1 máy chưa 
-     * (Để ngăn Admin thêm trùng lặp cùng 1 phụ kiện)
-     */
     boolean existsByMainProductIdAndRelatedProductId(Long mainProductId, Long relatedProductId);
 }

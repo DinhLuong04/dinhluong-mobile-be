@@ -1,7 +1,5 @@
 package com.dinhluong.dlmstore.dto.responses;
 
-
-
 import lombok.Builder;
 import lombok.Data;
 import java.math.BigDecimal;
@@ -21,8 +19,8 @@ public class ProductResponse {
     private String status;
     private Integer totalVariants; // Số lượng phiên bản
     private LocalDateTime createdAt;
-    private Integer totalStock; 
-    private Boolean isFeatured; 
+    private Integer totalStock;
+    private Boolean isFeatured;
     private Integer soldQuantity;
     private Integer lowStockVariantCount;
     private Integer outOfStockVariantCount;

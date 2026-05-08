@@ -1,4 +1,5 @@
 package com.dinhluong.dlmstore.entity.imp;
+
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;

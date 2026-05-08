@@ -5,10 +5,10 @@ import java.util.List;
 import lombok.*;
 
 @Data
-    @Builder
+@Builder
 public class ReviewSummaryDTO {
     private Double average;
-        private Long totalCount;
-        private List<BreakdownItemDTO> breakdown;
-        private boolean currentUserHasPurchased;
+    private Long totalCount;
+    private List<BreakdownItemDTO> breakdown;
+    private boolean currentUserHasPurchased;
 }

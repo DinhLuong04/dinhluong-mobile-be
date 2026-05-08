@@ -20,25 +20,25 @@ public class VoucherController {
     private final VoucherService voucherService;
 
     @GetMapping("/available")
-    public ResponseEntity<ApiResponse<List<Voucher>>> getAvailableVouchers( @AuthenticationPrincipal CustomUserPrincipal currentUser) {
-        // API này có thể không cần đăng nhập cũng xem được, hoặc tuỳ logic của bạn
+    public ResponseEntity<ApiResponse<List<Voucher>>> getAvailableVouchers(
+            @AuthenticationPrincipal CustomUserPrincipal currentUser) {
         List<Voucher> vouchers = voucherService.getAvailableVouchers(currentUser.getId());
         return ResponseEntity.ok(ApiResponse.success("Lấy danh sách voucher khả dụng thành công", vouchers));
     }
-    
+
     @GetMapping("/my-vouchers")
     public ResponseEntity<ApiResponse<List<UserVoucher>>> getMyVouchers(
             @AuthenticationPrincipal CustomUserPrincipal currentUser) {
-        
+
         List<UserVoucher> myVouchers = voucherService.getMyVouchers(currentUser.getId());
         return ResponseEntity.ok(ApiResponse.success("Lấy danh sách voucher của bạn thành công", myVouchers));
     }
 
     @PostMapping("/{voucherId}/collect")
     public ResponseEntity<ApiResponse<String>> collectVoucher(
-            @AuthenticationPrincipal CustomUserPrincipal currentUser, 
+            @AuthenticationPrincipal CustomUserPrincipal currentUser,
             @PathVariable Long voucherId) {
-        
+
         String message = voucherService.collectVoucher(currentUser.getId(), voucherId);
         return ResponseEntity.ok(ApiResponse.success(message, null));
     }

@@ -1,6 +1,5 @@
 package com.dinhluong.dlmstore.entity;
 
-
 import jakarta.persistence.*;
 import lombok.*;
 import java.math.BigDecimal;
@@ -25,7 +24,7 @@ public class Voucher {
     private BigDecimal discount;
 
     @Enumerated(EnumType.STRING)
-    @Column(name = "discount_type", nullable = false) 
+    @Column(name = "discount_type", nullable = false)
     private DiscountType discountType;
 
     @Column(name = "min_order_amount", precision = 15, scale = 2)
@@ -43,16 +42,14 @@ public class Voucher {
     public enum DiscountType {
         PERCENT, FIXED
     }
-    
-    // 1. Dùng khi user bấm "Thu thập"
-public boolean isCollectable() {
-    return LocalDateTime.now().isBefore(expiryDate) 
-        && usedCount < usageLimit;
-}
 
-// 2. Dùng khi user áp dụng mã ở màn Checkout
-public boolean isApplicable(BigDecimal orderAmount) {
-    return isCollectable() 
-        && (minOrderAmount == null || orderAmount.compareTo(minOrderAmount) >= 0);
-}
+    public boolean isCollectable() {
+        return LocalDateTime.now().isBefore(expiryDate)
+                && usedCount < usageLimit;
+    }
+
+    public boolean isApplicable(BigDecimal orderAmount) {
+        return isCollectable()
+                && (minOrderAmount == null || orderAmount.compareTo(minOrderAmount) >= 0);
+    }
 }

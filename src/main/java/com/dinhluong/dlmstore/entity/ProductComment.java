@@ -47,7 +47,7 @@ public class ProductComment {
     private Boolean isPurchased;
 
     @Enumerated(EnumType.STRING)
-    private CommentStatus status; // Enum: PENDING, APPROVED, REJECTED
+    private CommentStatus status;
 
     @Column(name = "created_at", updatable = false)
     private LocalDateTime createdAt;
@@ -56,10 +56,9 @@ public class ProductComment {
     protected void onCreate() {
         this.createdAt = LocalDateTime.now();
         if (this.status == null)
-            this.status = CommentStatus.PENDING; // Mặc định là chờ duyệt
+            this.status = CommentStatus.PENDING;
     }
 
-    // Quan hệ 1-Nhiều với bảng hình ảnh
     @OneToMany(mappedBy = "comment", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     private List<ProductCommentImage> images;
 

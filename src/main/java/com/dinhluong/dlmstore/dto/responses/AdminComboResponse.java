@@ -11,7 +11,7 @@ public class AdminComboResponse {
     private Long mainProductId;
     private Long relatedProductId;
     private String relatedProductThumbnail;
-    private String relatedProductName; // Cần tên phụ kiện để hiển thị lên bảng
+    private String relatedProductName;
     private BigDecimal discountAmount;
     private String note;
 }

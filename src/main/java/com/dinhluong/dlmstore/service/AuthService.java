@@ -13,6 +13,7 @@ public interface AuthService {
     void resetPassword(String email, String otp, String newPassword);
 
     Users Login(String email, String password);
+    Users adminLogin(String email, String password);
 
     void register(RegisterRequest request);
 

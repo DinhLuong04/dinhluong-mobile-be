@@ -1,6 +1,5 @@
 package com.dinhluong.dlmstore.entity;
 
-
 import jakarta.persistence.*;
 import lombok.*;
 
@@ -8,7 +7,7 @@ import lombok.*;
 @Table(name = "product_spec_values")
 @Data
 
-public class ProductSpecValue  {
+public class ProductSpecValue {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
@@ -16,7 +15,7 @@ public class ProductSpecValue  {
     @JoinColumn(name = "product_id", nullable = false)
     private Product product;
 
-    @ManyToOne(fetch = FetchType.EAGER) // Eager để khi get Product lấy luôn tên thuộc tính
+    @ManyToOne(fetch = FetchType.EAGER)
     @JoinColumn(name = "attribute_id", nullable = false)
     private SpecAttribute attribute;
 

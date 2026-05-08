@@ -2,7 +2,6 @@ package com.dinhluong.dlmstore.entity;
 
 import java.math.BigDecimal;
 import java.util.List;
-import com.dinhluong.dlmstore.convert.IntegerListConverter;
 import com.dinhluong.dlmstore.convert.JsonNodeConverter;
 import com.dinhluong.dlmstore.convert.StringListConverter;
 import com.dinhluong.dlmstore.entity.Enums.OsType;
@@ -11,7 +10,7 @@ import com.dinhluong.dlmstore.entity.Enums.ProductType;
 import com.dinhluong.dlmstore.entity.imp.BaseEntity;
 import com.fasterxml.jackson.databind.JsonNode;
 import org.hibernate.annotations.SQLDelete;
-import org.hibernate.annotations.SQLRestriction; //
+import org.hibernate.annotations.SQLRestriction;
 import jakarta.persistence.*;
 import lombok.*;
 
@@ -59,8 +58,6 @@ public class Product extends BaseEntity {
     @Enumerated(EnumType.STRING)
     private ProductStatus status;
 
-    // --- CÁC CỘT LỌC VẬT LÝ (INDEXED COLUMNS) ---
-
     @Enumerated(EnumType.STRING)
     @Column(name = "os_type")
     private OsType osType;
@@ -85,15 +82,13 @@ public class Product extends BaseEntity {
 
     @Column(name = "search_keywords", columnDefinition = "TEXT")
     private String searchKeywords;
-    // --- 1. XÓA MỀM (SOFT DELETE) ---
+
     @Column(name = "is_deleted")
     private boolean isDeleted = false;
 
-    // --- 2. SẢN PHẨM NỔI BẬT (GHIM TRANG CHỦ) ---
     @Column(name = "is_featured")
     private boolean isFeatured = false;
 
-    // --- 3. THỐNG KÊ (INVENTORY & SALES) ---
     @Column(name = "total_stock")
     private Integer totalStock = 0;
 
@@ -103,28 +98,22 @@ public class Product extends BaseEntity {
     @Column(name = "view_count")
     private Integer viewCount = 0;
 
-    // --- 4. SEO ---
     @Column(name = "meta_title")
     private String metaTitle;
 
     @Column(name = "meta_description", columnDefinition = "TEXT")
     private String metaDescription;
 
-    // --- CÁC CỘT JSON (Yêu cầu Hibernate 6 + Jackson) ---
-
     @Convert(converter = StringListConverter.class)
     @Column(name = "available_rams", columnDefinition = "json")
-    private List<String> availableRams; // Để lưu được ["8 GB", "12 GB"]
+    private List<String> availableRams;
 
     @Convert(converter = StringListConverter.class)
     @Column(name = "available_roms", columnDefinition = "json")
-    private List<String> availableRoms;// VD: ["128GB", "256GB"] hoặc [128, 256]
-
+    private List<String> availableRoms;
     @Convert(converter = JsonNodeConverter.class)
     @Column(name = "specifications_json", columnDefinition = "json")
-    private JsonNode specificationsJson;// Cache hiển thị chi tiết (Map cấu trúc tự do)
-
-    // --- QUAN HỆ (RELATIONSHIPS) ---
+    private JsonNode specificationsJson;
 
     @OneToMany(mappedBy = "product", cascade = CascadeType.ALL, orphanRemoval = true)
     @ToString.Exclude
@@ -134,7 +123,6 @@ public class Product extends BaseEntity {
     @ToString.Exclude
     private List<ProductVariant> variants;
 
-    // [THAY ĐỔI] Thay thế specGroups cũ bằng product_spec_values mới
     @OneToMany(mappedBy = "product", cascade = CascadeType.ALL, orphanRemoval = true)
     @ToString.Exclude
     private List<ProductSpecValue> specValues;

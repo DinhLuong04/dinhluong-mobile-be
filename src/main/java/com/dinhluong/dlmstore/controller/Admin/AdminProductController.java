@@ -4,7 +4,6 @@ import com.dinhluong.dlmstore.dto.ApiResponse;
 import com.dinhluong.dlmstore.dto.requests.BulkStockUpdateRequest;
 import com.dinhluong.dlmstore.dto.requests.ProductRequest;
 import com.dinhluong.dlmstore.dto.responses.ProductResponse;
-import com.dinhluong.dlmstore.dto.responses.ProductVariantResponse;
 import com.dinhluong.dlmstore.entity.Product;
 import com.dinhluong.dlmstore.entity.Enums.ProductStatus;
 import com.dinhluong.dlmstore.entity.Enums.ProductType;
@@ -14,8 +13,6 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 
 import java.util.List;
-import java.util.stream.Collectors;
-
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -36,16 +33,15 @@ public class AdminProductController {
             @RequestParam(required = false) ProductType productType,
             @RequestParam(required = false) String keyword,
             @RequestParam(required = false) ProductStatus status,
-            @RequestParam(required = false) Long brandId,     // <--- Hứng brandId
-            @RequestParam(required = false) Long categoryId,  // <--- Hứng categoryId
+            @RequestParam(required = false) Long brandId,
+            @RequestParam(required = false) Long categoryId,
             @RequestParam(defaultValue = "0") int page,
-            @RequestParam(defaultValue = "10") int size){
-        
+            @RequestParam(defaultValue = "10") int size) {
+
         Pageable pageable = PageRequest.of(page, size);
-        
-        // <-- TRUYỀN THÊM productType VÀO HÀM (Cho khớp với Service đã sửa ở bước trước)
-        Page<ProductResponse> products = adminProductService.getAdminProducts(productType, keyword, status, brandId, categoryId, pageable);
-        
+        Page<ProductResponse> products = adminProductService.getAdminProducts(productType, keyword, status, brandId,
+                categoryId, pageable);
+
         return ResponseEntity.ok(ApiResponse.success("Thành công", products));
     }
 
@@ -75,62 +71,54 @@ public class AdminProductController {
         return ResponseEntity.ok(ApiResponse.success("Thành công", product));
     }
 
-    private final ObjectMapper objectMapper; // Dùng để chuyển String -> ProductRequest
+    private final ObjectMapper objectMapper;
 
-   // TẠO MỚI SẢN PHẨM (MULTIPART)
+    // TẠO MỚI SẢN PHẨM (MULTIPART)
     @PostMapping(consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ResponseEntity<?> createProduct(
-            @RequestPart("data") String dataJson, 
+            @RequestPart("data") String dataJson,
             @RequestPart(value = "thumbnail", required = false) MultipartFile thumbnail,
             @RequestPart(value = "gallery", required = false) List<MultipartFile> gallery) {
-        
+
         try {
             ProductRequest request = objectMapper.readValue(dataJson, ProductRequest.class);
-            request.setId(null); 
-            
-            // Đã sửa 'saveProduct' thành 'createProduct' cho khớp với Service
+            request.setId(null);
+
             Product savedProduct = adminProductService.createProduct(request, thumbnail, gallery);
             return ResponseEntity.ok(ApiResponse.success("Thêm mới thành công", savedProduct.getId()));
         } catch (Exception e) {
-            // SỬA Ở ĐÂY: Nếu ApiResponse nhận 2 tham số (int status, String message)
+
             return ResponseEntity.badRequest().body(ApiResponse.error(400, "Lỗi: " + e.getMessage()));
-            
-            // LƯU Ý: Nếu ApiResponse.error() của bạn chỉ nhận 1 chuỗi String, hãy dùng dòng này thay thế:
-            // return ResponseEntity.badRequest().body(ApiResponse.error("400 - Lỗi: " + e.getMessage()));
         }
     }
-    // API UPLOAD ẢNH TỨC THỜI (SILENT UPLOAD)
+
     @PostMapping(value = "/upload", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ResponseEntity<?> uploadSingleImage(@RequestParam("file") MultipartFile file) {
         try {
-            // Gọi hàm vừa tạo bên Service
+
             String uploadedUrl = adminProductService.uploadSingleImage(file);
             return ResponseEntity.ok(ApiResponse.success("Upload thành công", uploadedUrl));
         } catch (Exception e) {
             return ResponseEntity.badRequest().body(ApiResponse.error(400, "Lỗi upload: " + e.getMessage()));
         }
     }
-    // CẬP NHẬT SẢN PHẨM (MULTIPART)
+
     @PutMapping(value = "/{id}", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ResponseEntity<?> updateProduct(
             @PathVariable Long id,
             @RequestPart("data") String dataJson,
             @RequestPart(value = "thumbnail", required = false) MultipartFile thumbnail,
             @RequestPart(value = "gallery", required = false) List<MultipartFile> gallery) {
-        
+
         try {
             ProductRequest request = objectMapper.readValue(dataJson, ProductRequest.class);
             request.setId(id);
-            
-            // Đã bổ sung biến 'id' vào hàm updateProduct cho khớp với Service
             Product savedProduct = adminProductService.updateProduct(id, request, thumbnail, gallery);
             return ResponseEntity.ok(ApiResponse.success("Cập nhật thành công", savedProduct.getId()));
         } catch (Exception e) {
-            // SỬA Ở ĐÂY: Thêm mã lỗi 400 vào trước chuỗi message
+
             return ResponseEntity.badRequest().body(ApiResponse.error(400, "Lỗi: " + e.getMessage()));
-            
-            // Hoặc tương tự như trên nếu method chỉ nhận String: 
-            // return ResponseEntity.badRequest().body(ApiResponse.error("400 - Lỗi: " + e.getMessage()));
+
         }
     }
 
@@ -167,8 +155,4 @@ public class AdminProductController {
         }
     }
 
-
-    
-
-    
 }

@@ -1,7 +1,5 @@
 package com.dinhluong.dlmstore.dto.responses;
 
-
-
 import com.dinhluong.dlmstore.entity.Order;
 import lombok.Builder;
 import lombok.Data;
@@ -12,12 +10,10 @@ import java.util.List;
 @Data
 @Builder
 public class OrderResponse {
-   private Long id;
+    private Long id;
     private BigDecimal totalAmount;
     private Order.OrderStatus status;
     private LocalDateTime createdAt;
-    
-    // 🔥 3 trường này đang bị thiếu nên Builder báo lỗi
     private String receiverName;
     private String receiverPhone;
     private String receiverAddress;

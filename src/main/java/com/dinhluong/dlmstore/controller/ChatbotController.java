@@ -23,7 +23,7 @@ public class ChatbotController {
         }
 
         try {
-           ChatBotResponse answer = chatbotService.processUserMessage(request.getMessage());
+            ChatBotResponse answer = chatbotService.processUserMessage(request.getMessage());
             return ResponseEntity.ok(ApiResponse.success("Trả lời thành công", answer));
 
         } catch (Exception e) {

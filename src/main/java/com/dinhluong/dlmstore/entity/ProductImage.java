@@ -7,7 +7,8 @@ import lombok.*;
 @Table(name = "product_images")
 @Data
 public class ProductImage {
-    @Id @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
     @ManyToOne(fetch = FetchType.LAZY)
@@ -15,9 +16,9 @@ public class ProductImage {
     @ToString.Exclude
     private Product product;
 
-    @Column(name = "image_url") // <--- Đã sửa
+    @Column(name = "image_url")
     private String imageUrl;
 
-    @Column(name = "sort_order") // <--- Đã sửa
+    @Column(name = "sort_order")
     private Integer sortOrder;
 }

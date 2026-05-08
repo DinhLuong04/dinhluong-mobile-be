@@ -17,7 +17,8 @@ public class DashboardResponse {
     private List<ActiveVoucher> activeVouchers;
     private SupportStats supportStats;
 
-    @Data @Builder
+    @Data
+    @Builder
     public static class Overview {
         private BigDecimal totalRevenue;
         private Long completedOrders;
@@ -25,21 +26,24 @@ public class DashboardResponse {
         private Long pendingTasks;
     }
 
-    @Data @Builder
+    @Data
+    @Builder
     public static class RevenueTrend {
         private String date;
         private BigDecimal revenue;
         private Long orders;
     }
 
-    @Data @Builder
+    @Data
+    @Builder
     public static class PaymentMethodStat {
         private String name;
         private Long value;
         private String color;
     }
 
-    @Data @Builder
+    @Data
+    @Builder
     public static class TopProduct {
         private Long id;
         private String name;
@@ -49,7 +53,8 @@ public class DashboardResponse {
         private String image;
     }
 
-    @Data @Builder
+    @Data
+    @Builder
     public static class LowStockVariant {
         private String sku;
         private String name;
@@ -58,14 +63,16 @@ public class DashboardResponse {
         private String image;
     }
 
-    @Data @Builder
+    @Data
+    @Builder
     public static class TopBrand {
         private String name;
         private BigDecimal revenue;
         private String fill;
     }
 
-    @Data @Builder
+    @Data
+    @Builder
     public static class ActiveVoucher {
         private String code;
         private Integer used;
@@ -73,7 +80,8 @@ public class DashboardResponse {
         private String expiry;
     }
 
-    @Data @Builder
+    @Data
+    @Builder
     public static class SupportStats {
         private Long chatbotHandled;
         private Long humanHandled;

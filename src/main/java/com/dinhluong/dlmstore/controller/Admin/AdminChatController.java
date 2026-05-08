@@ -5,7 +5,7 @@ import com.dinhluong.dlmstore.dto.ChatMessageDTO;
 import com.dinhluong.dlmstore.dto.ConversationDTO;
 import com.dinhluong.dlmstore.entity.ChatMessage;
 import com.dinhluong.dlmstore.service.ChatService;
-import com.dinhluong.dlmstore.security.CustomUserPrincipal; 
+import com.dinhluong.dlmstore.security.CustomUserPrincipal;
 
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -22,7 +22,7 @@ import java.util.Map;
 public class AdminChatController {
 
     private final ChatService chatService;
-    private final SimpMessagingTemplate messagingTemplate; // THÊM MỚI
+    private final SimpMessagingTemplate messagingTemplate;
 
     @GetMapping("/conversations")
     public ResponseEntity<ApiResponse<List<ConversationDTO>>> getConversations(
@@ -38,28 +38,26 @@ public class AdminChatController {
             @AuthenticationPrincipal CustomUserPrincipal currentUser) {
         Long adminId = currentUser.getId();
         chatService.markAsRead(userId, adminId);
-        
+
         List<ChatMessage> history = chatService.getConversationHistory(adminId, userId);
         return ResponseEntity.ok(ApiResponse.success("Lấy lịch sử chat thành công", history));
     }
 
     @PostMapping("/send/{userId}")
     public ResponseEntity<ApiResponse<ChatMessage>> sendMessage(
-            @PathVariable Long userId, 
+            @PathVariable Long userId,
             @RequestBody Map<String, String> payload,
             @AuthenticationPrincipal CustomUserPrincipal currentUser) {
-        
+
         Long adminId = currentUser.getId();
         String content = payload.get("message");
-        
+
         if (content == null || content.trim().isEmpty()) {
             return ResponseEntity.badRequest().body(ApiResponse.error(400, "Tin nhắn không được để trống"));
         }
 
-        // 1. Lưu vào Database
         ChatMessage savedMessage = chatService.sendMessage(adminId, userId, content);
 
-        // 2. Ép kiểu sang DTO để gửi qua WebSocket
         ChatMessageDTO responseMsg = ChatMessageDTO.builder()
                 .id(savedMessage.getId())
                 .senderId(savedMessage.getSenderId())
@@ -68,12 +66,10 @@ public class AdminChatController {
                 .sentAt(savedMessage.getSentAt() != null ? savedMessage.getSentAt().toString() : null)
                 .build();
 
-        // 3. Bắn WebSocket tới kênh của Khách hàng
         messagingTemplate.convertAndSendToUser(
                 String.valueOf(userId),
                 "/queue/messages",
-                responseMsg
-        );
+                responseMsg);
 
         return ResponseEntity.ok(ApiResponse.success("Gửi tin nhắn thành công", savedMessage));
     }

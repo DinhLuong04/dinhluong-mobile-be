@@ -5,6 +5,7 @@ import lombok.*;
 import java.util.Set;
 
 import jakarta.persistence.*;
+
 @Entity
 @Table(name = "roles")
 @AllArgsConstructor

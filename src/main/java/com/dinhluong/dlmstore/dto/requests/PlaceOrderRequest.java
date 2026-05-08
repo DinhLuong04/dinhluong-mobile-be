@@ -12,8 +12,5 @@ public class PlaceOrderRequest {
     private String note;
     private String paymentMethod;
     private String voucherCode;
-    
-    // Đổi tên field từ cartItems thành items cho tổng quát hơn
-    private List<PlaceOrderItemRequest> items; 
+    private List<PlaceOrderItemRequest> items;
 }
-

@@ -1,7 +1,5 @@
 package com.dinhluong.dlmstore.controller.Admin;
 
-
-
 import com.dinhluong.dlmstore.dto.ApiResponse;
 import com.dinhluong.dlmstore.dto.responses.PaymentResponse;
 import com.dinhluong.dlmstore.service.PaymentService;
@@ -25,7 +23,7 @@ public class AdminPaymentController {
             @RequestParam(required = false) String keyword) {
 
         List<PaymentResponse> payments = paymentService.getAdminPayments(method, status, keyword);
-        
+
         return ResponseEntity.ok(ApiResponse.success("Lấy danh sách giao dịch thành công", payments));
     }
 }

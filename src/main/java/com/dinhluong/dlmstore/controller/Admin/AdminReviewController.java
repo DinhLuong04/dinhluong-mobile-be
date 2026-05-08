@@ -25,7 +25,7 @@ public class AdminReviewController {
             @RequestParam(required = false) ProductComment.CommentStatus status,
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "10") int size) {
-        
+
         Pageable pageable = PageRequest.of(page, size);
         Page<AdminCommentResponse> reviews = adminReviewService.getAdminReviews(keyword, status, pageable);
         return ResponseEntity.ok(ApiResponse.success("Lấy danh sách bình luận thành công", reviews));
@@ -33,7 +33,7 @@ public class AdminReviewController {
 
     @PutMapping("/{id}/status")
     public ResponseEntity<ApiResponse<String>> updateStatus(
-            @PathVariable Long id, 
+            @PathVariable Long id,
             @RequestParam ProductComment.CommentStatus status) {
         try {
             adminReviewService.updateReviewStatus(id, status);
@@ -45,7 +45,7 @@ public class AdminReviewController {
 
     @PostMapping("/{id}/reply")
     public ResponseEntity<ApiResponse<String>> replyToReview(
-            @PathVariable Long id, 
+            @PathVariable Long id,
             @RequestBody AdminReplyRequest request) {
         try {
             adminReviewService.replyToReview(id, request);

@@ -1,7 +1,5 @@
 package com.dinhluong.dlmstore.repository;
 
-
-
 import java.util.List;
 import java.util.Optional;
 
@@ -14,14 +12,12 @@ import com.dinhluong.dlmstore.entity.CartItem;
 public interface CartItemRepository extends JpaRepository<CartItem, Long> {
     // Tìm các sản phẩm trong giỏ hàng theo cart_id
     List<CartItem> findByCartId(Long cartId);
-    
+
     // Tìm SP chính đã tồn tại trong cart
     Optional<CartItem> findByCartIdAndProductVariantIdAndParentIdIsNull(
             Long cartId,
-            Long productVariantId
-    );
+            Long productVariantId);
 
     // Tìm combo theo parent
     List<CartItem> findByParentId(Long parentId);
 }
-

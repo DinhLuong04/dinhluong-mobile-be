@@ -1,5 +1,6 @@
 
 package com.dinhluong.dlmstore.security;
+
 import java.util.Map;
 
 import org.springframework.beans.factory.annotation.Autowired;
@@ -12,8 +13,6 @@ import org.springframework.web.socket.server.HandshakeInterceptor;
 
 import com.dinhluong.dlmstore.utils.JwtTokenProvider;
 
-
-
 @Component
 
 public class JwtHandshakeInterceptor implements HandshakeInterceptor {
@@ -25,7 +24,6 @@ public class JwtHandshakeInterceptor implements HandshakeInterceptor {
             ServerHttpResponse response,
             WebSocketHandler wsHandler,
             Exception exception) {
-
     }
 
     @Override

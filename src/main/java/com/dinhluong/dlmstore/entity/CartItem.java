@@ -1,6 +1,5 @@
 package com.dinhluong.dlmstore.entity;
 
-
 import jakarta.persistence.*;
 import lombok.Data;
 
@@ -21,7 +20,6 @@ public class CartItem {
     @Column(nullable = false)
     private Integer quantity;
 
-    // Chìa khóa để gom nhóm Combo: Nếu null -> SP chính. Nếu có số -> Phụ kiện mua kèm của SP chính đó
     @Column(name = "parent_id")
-    private Long parentId; 
+    private Long parentId;
 }

@@ -12,8 +12,6 @@ public class CategoryResponse {
     private String slug;
     private String thumbnailUrl;
     private Integer level;
-    
-    // Chỉ trả về ID và Tên của danh mục cha thay vì bê nguyên cả object Parent
     private Long parentId;
-    private String parentName; 
+    private String parentName;
 }

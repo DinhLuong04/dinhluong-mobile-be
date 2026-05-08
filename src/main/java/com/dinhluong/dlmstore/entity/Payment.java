@@ -1,7 +1,5 @@
 package com.dinhluong.dlmstore.entity;
 
-
-
 import jakarta.persistence.*;
 import lombok.*;
 
@@ -16,7 +14,7 @@ import java.time.LocalDateTime;
 @AllArgsConstructor
 @Builder
 public class Payment {
-    
+
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;

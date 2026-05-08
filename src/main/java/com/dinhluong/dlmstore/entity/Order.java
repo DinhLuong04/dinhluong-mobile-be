@@ -1,6 +1,5 @@
 package com.dinhluong.dlmstore.entity;
 
-
 import jakarta.persistence.*;
 import lombok.*;
 import java.math.BigDecimal;
@@ -31,7 +30,7 @@ public class Order {
     private BigDecimal totalAmount;
 
     @Enumerated(EnumType.STRING)
-    private OrderStatus status; // Enum: PENDING, PROCESSING, SHIPPED, DELIVERED, CANCELLED
+    private OrderStatus status;
 
     @Column(name = "receiver_name", length = 100)
     private String receiverName;
@@ -64,6 +63,6 @@ public class Order {
     }
 
     public enum OrderStatus {
-        PENDING, PROCESSING, SHIPPED, DELIVERED, RETURNED, CANCELLED // Thêm RETURNED
+        PENDING, PROCESSING, SHIPPED, DELIVERED, RETURNED, CANCELLED 
     }
 }

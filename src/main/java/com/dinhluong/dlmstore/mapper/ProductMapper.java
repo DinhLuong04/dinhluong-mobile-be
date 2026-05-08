@@ -26,10 +26,9 @@ public abstract class ProductMapper {
     @Autowired
     protected ObjectMapper objectMapper;
 
-    // ====================================================
-    // 1. MAPPING CHO CARD (DANH SÁCH)
-    // ====================================================
-    @Mapping(source="id", target="id")
+    // MAPPING CHO CARD (DANH SÁCH)
+
+    @Mapping(source = "id", target = "id")
     @Mapping(source = "slug", target = "slug")
     @Mapping(source = "thumbnailUrl", target = "image")
     @Mapping(source = "displayPrice", target = "price")
@@ -56,9 +55,9 @@ public abstract class ProductMapper {
         }
 
         if (product.getVariants() != null && !product.getVariants().isEmpty()) {
-            // FIX LỖI: Lọc bỏ các Variant có colorHex bị null TRƯỚC khi gọi distinctByKey
+
             List<ProductCardResponse.ColorDto> distinctColors = product.getVariants().stream()
-                    .filter(v -> v.getColorHex() != null) 
+                    .filter(v -> v.getColorHex() != null)
                     .filter(distinctByKey(ProductVariant::getColorHex))
                     .map(v -> {
                         ProductCardResponse.ColorDto c = new ProductCardResponse.ColorDto();
@@ -68,7 +67,6 @@ public abstract class ProductMapper {
                     .collect(Collectors.toList());
             response.setColors(distinctColors);
 
-            // FIX LỖI: Lọc bỏ các Variant có rom bị null TRƯỚC khi gọi distinctByKey
             List<ProductCardResponse.VariantDto> distinctRoms = product.getVariants().stream()
                     .filter(v -> v.getRom() != null)
                     .filter(distinctByKey(ProductVariant::getRom))
@@ -79,22 +77,22 @@ public abstract class ProductMapper {
                         return dto;
                     })
                     .collect(Collectors.toList());
-            
-            if (!distinctRoms.isEmpty()) distinctRoms.get(0).setActive(true);
+
+            if (!distinctRoms.isEmpty())
+                distinctRoms.get(0).setActive(true);
             response.setVariants(distinctRoms);
         }
 
         List<String> promoLogos = new ArrayList<>();
         promoLogos.add("https://homepage.momocdn.net/fileuploads/svg/momo-file-240411162904.svg");
         promoLogos.add("https://vnpay.vn/assets/images/logo-icon/logo-primary.svg");
-        
+
         response.setPromotions(promoLogos);
         response.setPromotionText("Giảm thêm 5% tối đa 200k qua VNPay/Momo");
     }
 
-    // ====================================================
-    // 2. MAPPING CHO DETAIL (CHI TIẾT)
-    // ====================================================
+    // MAPPING DETAIL
+
     @Mapping(source = "displayPrice", target = "price")
     @Mapping(source = "highlightSpecs", target = "highlightSpecs")
     @Mapping(source = "thumbnailUrl", target = "thumbnail")
@@ -111,11 +109,13 @@ public abstract class ProductMapper {
     public abstract ProductDetailResponse.HighlightSpecDto toHighlightDto(ProductHighlightSpec spec);
 
     protected List<ProductDetailResponse.SpecGroupDto> mapJsonToSpecs(JsonNode jsonNode) {
-        if (jsonNode == null) return new ArrayList<>();
+        if (jsonNode == null)
+            return new ArrayList<>();
         try {
-            return objectMapper.convertValue(jsonNode, new TypeReference<List<ProductDetailResponse.SpecGroupDto>>() {});
+            return objectMapper.convertValue(jsonNode, new TypeReference<List<ProductDetailResponse.SpecGroupDto>>() {
+            });
         } catch (Exception e) {
-            e.printStackTrace(); 
+            e.printStackTrace();
             return new ArrayList<>();
         }
     }
@@ -123,7 +123,7 @@ public abstract class ProductMapper {
     @AfterMapping
     protected void mapDetailFields(Product product, @MappingTarget ProductDetailResponse response) {
         if (product.getImages() != null) {
-            // Cẩn thận: Nếu sortOrder bị null có thể lỗi, nhưng mình giả định nó là int (primitive)
+
             response.setProductImages(product.getImages().stream()
                     .sorted(Comparator.comparingInt(ProductImage::getSortOrder))
                     .map(ProductImage::getImageUrl)
@@ -153,19 +153,18 @@ public abstract class ProductMapper {
             response.setVariants(variantDtos);
 
             if (product.getAvailableRoms() != null && !product.getAvailableRoms().isEmpty()) {
-                 response.setStorageOptions(product.getAvailableRoms());
+                response.setStorageOptions(product.getAvailableRoms());
             } else {
-                 // FIX LỖI: Lọc các ROM bị null trước khi gọi distinct() và sorted()
-                 List<String> roms = product.getVariants().stream()
+
+                List<String> roms = product.getVariants().stream()
                         .map(ProductVariant::getRom)
-                        .filter(Objects::nonNull) // Rất quan trọng!
+                        .filter(Objects::nonNull)
                         .distinct()
                         .sorted()
                         .collect(Collectors.toList());
-                 response.setStorageOptions(roms);
+                response.setStorageOptions(roms);
             }
 
-            // FIX LỖI: Lọc các Variant có colorName bị null
             List<ProductDetailResponse.ColorOptionDto> colors = product.getVariants().stream()
                     .filter(v -> v.getColorName() != null)
                     .filter(distinctByKey(ProductVariant::getColorName))
@@ -186,12 +185,11 @@ public abstract class ProductMapper {
         response.setPromotions(promos);
     }
 
-    // FIX LỖI: Đảm bảo ConcurrentHashMap không nhận key Null
     protected <T> Predicate<T> distinctByKey(Function<? super T, ?> keyExtractor) {
         Set<Object> seen = ConcurrentHashMap.newKeySet();
         return t -> {
             Object key = keyExtractor.apply(t);
-            // Nếu key null thì trả về false luôn (không ném vào Map)
+
             return key != null && seen.add(key);
         };
     }

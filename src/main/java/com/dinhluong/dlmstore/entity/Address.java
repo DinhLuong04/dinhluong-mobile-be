@@ -2,7 +2,8 @@ package com.dinhluong.dlmstore.entity;
 
 import jakarta.persistence.*;
 import lombok.*;
-import com.fasterxml.jackson.annotation.JsonIgnore; 
+import com.fasterxml.jackson.annotation.JsonIgnore;
+
 @Entity
 @Table(name = "addresses")
 @Getter
@@ -15,11 +16,9 @@ public class Address {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
-
-    // Liên kết n-1 với bảng Users
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "user_id", nullable = false)
-    @JsonIgnore // BẮT BUỘC THÊM DÒNG NÀY
+    @JsonIgnore 
     private Users user;
 
     @Column(name = "street", length = 255)

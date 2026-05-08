@@ -1,13 +1,14 @@
 package com.dinhluong.dlmstore.entity;
+
 import lombok.*;
 
 import java.time.LocalDateTime;
 import java.util.List;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
-import com.google.api.client.util.DateTime;
 
 import jakarta.persistence.*;
+
 @Entity
 @Table(name = "users")
 @AllArgsConstructor
@@ -41,15 +42,15 @@ public class Users {
     @Column(name = "updated_at")
     private LocalDateTime updatedAt;
     @Column(name = "verification_code")
-    private String verificationCode; 
+    private String verificationCode;
 
     @Column(name = "reset_password_token")
-    private String resetPasswordToken; 
+    private String resetPasswordToken;
 
     @Column(name = "token_expiry_date")
     private LocalDateTime tokenExpiryDate;
 
     @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true)
-    @JsonIgnore // Tránh lỗi infinite recursion khi parse JSON
+    @JsonIgnore
     private List<Address> addresses;
 }

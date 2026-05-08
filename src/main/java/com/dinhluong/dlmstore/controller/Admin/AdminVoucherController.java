@@ -1,7 +1,5 @@
 package com.dinhluong.dlmstore.controller.Admin;
 
-
-
 import com.dinhluong.dlmstore.dto.ApiResponse;
 import com.dinhluong.dlmstore.entity.Voucher;
 import com.dinhluong.dlmstore.service.VoucherService;
@@ -52,7 +50,8 @@ public class AdminVoucherController {
             voucherService.deleteVoucher(id);
             return ResponseEntity.ok(ApiResponse.success("Xóa mã giảm giá thành công", null));
         } catch (Exception e) {
-            return ResponseEntity.badRequest().body(ApiResponse.error(400, "Không thể xóa mã giảm giá này. Có thể đã được người dùng thu thập."));
+            return ResponseEntity.badRequest()
+                    .body(ApiResponse.error(400, "Không thể xóa mã giảm giá này. Có thể đã được người dùng thu thập."));
         }
     }
 }

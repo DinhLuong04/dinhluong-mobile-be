@@ -26,12 +26,12 @@ public class ChatController {
 
     @Autowired
     private ChatMessageRepository chatMessageRepository;
-   @Autowired
+    @Autowired
     private ChatService chatService;
+
     // 1. XỬ LÝ WEBSOCKET: Nhận tin nhắn và gửi đi
     @MessageMapping("/chat.sendMessage")
     public void processMessage(@Payload ChatMessageDTO chatMessageDTO) {
-        // Lưu vào DB
         ChatMessage savedMsg = chatMessageRepository.save(ChatMessage.builder()
                 .senderId(chatMessageDTO.getSenderId())
                 .receiverId(chatMessageDTO.getReceiverId())
@@ -52,40 +52,39 @@ public class ChatController {
         messagingTemplate.convertAndSendToUser(
                 String.valueOf(chatMessageDTO.getReceiverId()),
                 "/queue/messages",
-                responseMsg
-        );
+                responseMsg);
     }
 
-    // 2. REST API: Lấy lịch sử chat
+    // 2.Lấy lịch sử chat
     @GetMapping("/api/chat/history/{adminId}")
     public ResponseEntity<List<ChatMessageDTO>> getChatHistory(
             @PathVariable Long adminId,
             @AuthenticationPrincipal CustomUserPrincipal currentUser) {
-        
+
         Long currentUserId = currentUser.getId();
-        
+
         List<ChatMessage> messages = chatMessageRepository.findConversation(currentUserId, adminId);
-        
+
         List<ChatMessageDTO> dtos = messages.stream().map(msg -> ChatMessageDTO.builder()
                 .id(msg.getId())
                 .senderId(msg.getSenderId())
                 .receiverId(msg.getReceiverId())
                 .message(msg.getMessage())
                 .sentAt(msg.getSentAt().toString())
-                .build()
-        ).collect(Collectors.toList());
+                .build()).collect(Collectors.toList());
 
         return ResponseEntity.ok(dtos);
     }
 
-    // 3. (MỚI) API cho Admin lấy danh sách các đoạn hội thoại
+    // Admin lấy danh sách các đoạn hội thoại
     @GetMapping("/api/chat/conversations")
-    public ResponseEntity<List<ConversationDTO>> getConversations(@AuthenticationPrincipal CustomUserPrincipal currentUser) {
+    public ResponseEntity<List<ConversationDTO>> getConversations(
+            @AuthenticationPrincipal CustomUserPrincipal currentUser) {
         List<ConversationDTO> conversations = chatService.getConversations(currentUser.getId());
         return ResponseEntity.ok(conversations);
     }
 
-    // 4. (MỚI) API đánh dấu tin nhắn đã đọc (dùng khi khách đang mở tab chat)
+    // 4. đánh dấu tin nhắn đã đọc (dùng khi khách đang mở tab chat)
     @PutMapping("/api/chat/read/{senderId}")
     public ResponseEntity<Void> markAsRead(
             @PathVariable Long senderId,

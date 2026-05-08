@@ -7,9 +7,10 @@ import lombok.Data;
 import java.math.BigDecimal;
 import java.util.List;
 import com.fasterxml.jackson.databind.JsonNode;
+
 @Data
 public class ProductRequest {
-    private Long id; // Có khi Edit, Null khi Create
+    private Long id;
     private String name;
     private String slug;
     private ProductType productType;
@@ -21,7 +22,6 @@ public class ProductRequest {
     private String description;
     private String thumbnailUrl;
     private JsonNode specificationsJson;
-    // --- [BỔ SUNG] CÁC TRƯỜNG THÔNG TIN MỚI ---
     private String installmentText;
     private String highlightFeatures;
     private String specialFeatures;
@@ -31,8 +31,7 @@ public class ProductRequest {
     private Integer refreshRate;
     private Integer batteryCapacity;
     private Boolean support5g;
-    
-    // Các mảng dữ liệu lồng nhau
+
     private List<ImageDTO> images;
     private List<VariantDTO> variants;
     private List<HighlightSpecDTO> highlightSpecs;
@@ -56,8 +55,8 @@ public class ProductRequest {
         private String rom;
         private Integer stockQuantity;
         private Boolean isActive;
-        // [BỔ SUNG] Ảnh riêng cho Variant
-        private String imageUrl; 
+
+        private String imageUrl;
     }
 
     @Data

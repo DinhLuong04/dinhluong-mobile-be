@@ -1,8 +1,5 @@
 package com.dinhluong.dlmstore.convert;
 
-
-
-
 import com.dinhluong.dlmstore.dto.responses.ComboItemDetail;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -28,8 +25,10 @@ public class ComboItemListConverter implements AttributeConverter<List<ComboItem
     @Override
     public List<ComboItemDetail> convertToEntityAttribute(String dbData) {
         try {
-            if (dbData == null || dbData.trim().isEmpty()) return Collections.emptyList();
-            return mapper.readValue(dbData, new TypeReference<List<ComboItemDetail>>() {});
+            if (dbData == null || dbData.trim().isEmpty())
+                return Collections.emptyList();
+            return mapper.readValue(dbData, new TypeReference<List<ComboItemDetail>>() {
+            });
         } catch (Exception e) {
             throw new IllegalArgumentException("Error reading JSON", e);
         }

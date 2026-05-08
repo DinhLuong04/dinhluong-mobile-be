@@ -11,10 +11,8 @@ import java.util.List;
 @Repository
 public interface AddressRepository extends JpaRepository<Address, Long> {
     List<Address> findByUserId(Long userId);
-    
-    // Query để reset tất cả địa chỉ của user về false trước khi set địa chỉ mới làm mặc định
+
     @Modifying
     @Query("UPDATE Address a SET a.isDefault = false WHERE a.user.id = :userId")
     void resetDefaultAddressForUser(Long userId);
 }
-

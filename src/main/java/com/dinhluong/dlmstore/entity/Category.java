@@ -25,14 +25,12 @@ public class Category extends BaseEntity {
     @Column(name = "thumbnail_url")
     private String thumbnailUrl;
 
-    // Mối quan hệ đệ quy: Danh mục cha
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "parent_id")
     @ToString.Exclude
     @EqualsAndHashCode.Exclude
     private Category parent;
 
-    // Danh sách các danh mục con
     @OneToMany(mappedBy = "parent", cascade = CascadeType.ALL)
     @ToString.Exclude
     @EqualsAndHashCode.Exclude

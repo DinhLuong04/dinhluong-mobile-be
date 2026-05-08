@@ -13,5 +13,5 @@ import lombok.Data;
 @Builder
 public class ChatBotResponse {
     private String answer;
-   private List<ChatProductDto> products;
+    private List<ChatProductDto> products;
 }

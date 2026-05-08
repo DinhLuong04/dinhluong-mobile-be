@@ -23,8 +23,10 @@ public class StringListConverter implements AttributeConverter<List<String>, Str
     @Override
     public List<String> convertToEntityAttribute(String dbData) {
         try {
-            if (dbData == null) return Collections.emptyList();
-            return mapper.readValue(dbData, new TypeReference<List<String>>() {});
+            if (dbData == null)
+                return Collections.emptyList();
+            return mapper.readValue(dbData, new TypeReference<List<String>>() {
+            });
         } catch (Exception e) {
             throw new IllegalArgumentException("Error reading JSON", e);
         }

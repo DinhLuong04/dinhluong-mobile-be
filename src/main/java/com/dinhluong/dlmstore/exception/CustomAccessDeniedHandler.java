@@ -14,20 +14,18 @@ import java.io.IOException;
 @Component
 public class CustomAccessDeniedHandler implements AccessDeniedHandler {
 
-    @Override
-    public void handle(HttpServletRequest request, HttpServletResponse response,
-                       AccessDeniedException accessDeniedException) throws IOException {
-        AuthorizationException ex = new AuthorizationException("Bạn không có quyền truy cập");
+        @Override
+        public void handle(HttpServletRequest request, HttpServletResponse response,
+                        AccessDeniedException accessDeniedException) throws IOException {
+                AuthorizationException ex = new AuthorizationException("Bạn không có quyền truy cập");
 
-        ApiResponse<Object> apiResponse = ApiResponse.error(
-                ex.getStatus().value(),
-                ex.getMessage()
-        );
+                ApiResponse<Object> apiResponse = ApiResponse.error(
+                                ex.getStatus().value(),
+                                ex.getMessage());
 
-        response.setStatus(HttpServletResponse.SC_FORBIDDEN);
-        response.setContentType(MediaType.APPLICATION_JSON_VALUE);
-        response.getWriter().write(
-                new com.fasterxml.jackson.databind.ObjectMapper().writeValueAsString(apiResponse)
-        );
-    }
+                response.setStatus(HttpServletResponse.SC_FORBIDDEN);
+                response.setContentType(MediaType.APPLICATION_JSON_VALUE);
+                response.getWriter().write(
+                                new com.fasterxml.jackson.databind.ObjectMapper().writeValueAsString(apiResponse));
+        }
 }

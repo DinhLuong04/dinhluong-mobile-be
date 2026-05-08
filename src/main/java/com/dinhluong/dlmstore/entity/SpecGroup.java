@@ -1,6 +1,5 @@
 package com.dinhluong.dlmstore.entity;
 
-import com.dinhluong.dlmstore.entity.imp.BaseEntity;
 import jakarta.persistence.*;
 import lombok.*;
 import java.util.List;
@@ -8,7 +7,7 @@ import java.util.List;
 @Entity
 @Table(name = "spec_groups")
 @Data
-public class SpecGroup  {
+public class SpecGroup {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;

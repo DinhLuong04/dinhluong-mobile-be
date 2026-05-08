@@ -8,6 +8,6 @@ public class MasterDataRequest {
     private String description;
     private String slug;
     private String thumbnailUrl;
-    private Long parentId; // Dành riêng cho Category
-    private Integer level; // Dành riêng cho Category
+    private Long parentId;
+    private Integer level;
 }

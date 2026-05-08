@@ -1,6 +1,5 @@
 package com.dinhluong.dlmstore.controller.Admin;
 
-
 import com.dinhluong.dlmstore.dto.ApiResponse;
 import com.dinhluong.dlmstore.dto.responses.OrderResponse;
 import com.dinhluong.dlmstore.service.OrderService;
@@ -23,16 +22,16 @@ public class AdminOrderController {
     public ResponseEntity<ApiResponse<List<OrderResponse>>> getAllOrders(
             @RequestParam(defaultValue = "ALL") String status,
             @RequestParam(required = false) String keyword) {
-        
+
         List<OrderResponse> orders = orderService.getAdminOrders(status, keyword);
         return ResponseEntity.ok(ApiResponse.success("Lấy danh sách thành công", orders));
     }
 
-    @PutMapping("/{id}/status") 
+    @PutMapping("/{id}/status")
     public ResponseEntity<ApiResponse<OrderResponse>> updateStatus(
-            @PathVariable Long id, 
+            @PathVariable Long id,
             @RequestBody Map<String, String> request) {
-        
+
         try {
             String newStatus = request.get("status");
             String reason = request.get("reason");

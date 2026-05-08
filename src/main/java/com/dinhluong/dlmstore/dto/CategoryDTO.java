@@ -13,5 +13,5 @@ public class CategoryDTO {
     private Integer level;
     private Long parentId;
     private String parentName;
-    private List<CategoryDTO> children; // Để render Tree Table
+    private List<CategoryDTO> children;
 }

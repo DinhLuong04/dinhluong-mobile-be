@@ -7,5 +7,3 @@ public class ValidationException extends AppException {
         super("VALIDATION_ERROR", message, HttpStatus.BAD_REQUEST);
     }
 }
-
-

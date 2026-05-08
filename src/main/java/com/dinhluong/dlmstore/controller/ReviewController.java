@@ -19,23 +19,22 @@ public class ReviewController {
     @Autowired
     private ReviewService reviewService;
 
-    // 1. LẤY BÌNH LUẬN (CÓ THỂ LỌC THEO SAO)
+    // LẤY BÌNH LUẬN (CÓ THỂ LỌC THEO SAO)
     @GetMapping("/products/{slug}")
     public ResponseEntity<ApiResponse<ReviewResponse>> getReviews(
             @PathVariable String slug,
             @RequestParam(defaultValue = "1") int page,
             @RequestParam(defaultValue = "10") int limit,
             @RequestParam(required = false) Integer rating,
-        @AuthenticationPrincipal CustomUserPrincipal currentUser) { 
-        
+            @AuthenticationPrincipal CustomUserPrincipal currentUser) {
+
         Long currentUserId = (currentUser != null) ? currentUser.getId() : null;
 
-    // Truyền thêm currentUserId vào hàm service
-    ReviewResponse response = reviewService.getProductReviewsBySlug(slug, rating, page, limit, currentUserId);
+        ReviewResponse response = reviewService.getProductReviewsBySlug(slug, rating, page, limit, currentUserId);
         return ResponseEntity.ok(ApiResponse.success("Lấy danh sách đánh giá thành công", response));
     }
 
-    // 2. GỬI BÌNH LUẬN GỐC HOẶC PHẢN HỒI (REPLY)
+    // GỬI BÌNH LUẬN GỐC HOẶC PHẢN HỒI (REPLY)
     @PostMapping("")
     public ResponseEntity<ApiResponse<Object>> createReview(
             @RequestParam("product_slug") String productSlug,
@@ -43,17 +42,16 @@ public class ReviewController {
             @RequestParam("content") String content,
             @RequestParam(value = "parent_id", required = false) Long parentId,
             @RequestParam(value = "files", required = false) List<MultipartFile> files,
-            @AuthenticationPrincipal CustomUserPrincipal currentUser
-    ) {
+            @AuthenticationPrincipal CustomUserPrincipal currentUser) {
         try {
-            Long currentUserId = currentUser.getId(); 
+            Long currentUserId = currentUser.getId();
 
             reviewService.submitReviewBySlug(productSlug, rating, content, currentUserId, files, parentId);
-            
+
             return ResponseEntity.ok(ApiResponse.success("Đánh giá của bạn đã được gửi thành công!", null));
-            
+
         } catch (Exception e) {
-            e.printStackTrace(); 
+            e.printStackTrace();
             return ResponseEntity.badRequest().body(ApiResponse.error(400, "Lỗi khi gửi đánh giá: " + e.getMessage()));
         }
     }

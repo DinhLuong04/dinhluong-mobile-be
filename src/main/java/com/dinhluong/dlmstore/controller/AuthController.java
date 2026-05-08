@@ -6,29 +6,21 @@ import com.dinhluong.dlmstore.dto.requests.Oauth2LoginRequest;
 import com.dinhluong.dlmstore.dto.requests.RegisterRequest;
 import com.dinhluong.dlmstore.dto.responses.LoginResponse;
 import com.dinhluong.dlmstore.entity.Users;
-import com.dinhluong.dlmstore.repository.UserRepository;
 import com.dinhluong.dlmstore.service.AuthService;
 import com.dinhluong.dlmstore.service.FacebookService;
 import com.dinhluong.dlmstore.service.GoogleService;
 import com.dinhluong.dlmstore.utils.JwtTokenProvider;
-import com.google.api.client.googleapis.auth.oauth2.GoogleIdToken;
-import com.google.api.client.googleapis.auth.oauth2.GoogleIdTokenVerifier;
-import com.google.api.client.http.javanet.NetHttpTransport;
 
 import jakarta.validation.Valid;
-import lombok.RequiredArgsConstructor;
 
 import java.net.URI;
-import java.nio.file.attribute.UserPrincipal;
+
 import java.util.Collections;
-import java.util.HashMap;
+
 import java.util.Map;
 import org.springframework.http.HttpStatus;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.access.prepost.PreAuthorize;
-import org.springframework.security.authentication.*;
-import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
@@ -65,7 +57,24 @@ public class AuthController {
                         user.getAvatarUrl(),
                         accountType));
     }
+    @PostMapping("/admin-login")
+    public ApiResponse<LoginResponse> adminLogin(@Valid @RequestBody LoginRequest request) {
+        // Gọi sang hàm adminLogin để bắt buộc check quyền
+        Users user = authService.adminLogin(request.getEmail(), request.getPassword());
 
+        String token = tokenProvider.generateToken(user);
+        String accountType = "GOOGLE".equalsIgnoreCase(user.getAuthProvider()) ? "GOOGLE" : "NORMAL";
+
+        return ApiResponse.success(
+                "Đăng nhập quản trị thành công",
+                new LoginResponse(
+                        token,
+                        user.getId(),
+                        user.getEmail(),
+                        user.getFullName(),
+                        user.getAvatarUrl(),
+                        accountType));
+    }
     @PostMapping("/register")
     public ApiResponse<?> register(@RequestBody RegisterRequest request) {
         authService.register(request);

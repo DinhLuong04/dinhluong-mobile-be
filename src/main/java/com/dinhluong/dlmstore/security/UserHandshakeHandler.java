@@ -8,7 +8,7 @@ import org.springframework.web.socket.WebSocketHandler;
 import org.springframework.web.socket.server.support.DefaultHandshakeHandler;
 
 public class UserHandshakeHandler extends DefaultHandshakeHandler {
-     @Override
+    @Override
     protected Principal determineUser(
             ServerHttpRequest request,
             WebSocketHandler wsHandler,

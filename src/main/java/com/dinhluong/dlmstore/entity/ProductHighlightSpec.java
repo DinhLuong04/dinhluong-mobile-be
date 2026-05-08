@@ -7,7 +7,8 @@ import lombok.*;
 @Table(name = "product_highlight_specs")
 @Data
 public class ProductHighlightSpec {
-    @Id @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
     @ManyToOne(fetch = FetchType.LAZY)
@@ -16,9 +17,9 @@ public class ProductHighlightSpec {
     private Product product;
 
     private String label;
-    
+
     private String value;
 
-    @Column(name = "icon_url") // <--- Đã sửa
+    @Column(name = "icon_url")
     private String iconUrl;
 }

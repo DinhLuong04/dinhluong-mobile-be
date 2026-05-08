@@ -1,4 +1,5 @@
 package com.dinhluong.dlmstore.dto.responses;
+
 import lombok.Builder;
 import lombok.Data;
 import java.math.BigDecimal;
@@ -16,10 +17,10 @@ public class UserDetailResponse {
     private String authProvider;
     private Boolean isEnabled;
     private LocalDateTime createdAt;
-    
+
     private UserStats statistics;
-    private List<AddressDto> addresses;    // THÊM MỚI
-    private List<OrderDto> recentOrders;   // THÊM MỚI
+    private List<AddressDto> addresses;
+    private List<OrderDto> recentOrders;
 
     @Data
     @Builder
@@ -29,18 +30,15 @@ public class UserDetailResponse {
         private BigDecimal totalSpent;
     }
 
-    // Class phụ để hứng Địa chỉ
     @Data
     @Builder
     public static class AddressDto {
         private Long id;
-        // Ghi chú: Bạn tự đổi tên trường này cho khớp với Entity Address thực tế của bạn nhé
-        private String receiverName; 
+        private String receiverName;
         private String receiverPhone;
-        private String fullAddress; 
+        private String fullAddress;
     }
 
-    // Class phụ để hứng Đơn hàng gọn nhẹ
     @Data
     @Builder
     public static class OrderDto {

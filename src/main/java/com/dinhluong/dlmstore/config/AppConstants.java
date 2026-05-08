@@ -31,6 +31,8 @@ public class AppConstants {
             "/ws/**",
             "api/products/**",
             "api/chatbot",
-            "api/reviews/products/**"
+            "api/reviews/products/**",
+            "/admin/login",
+            "/error"
     };
 }

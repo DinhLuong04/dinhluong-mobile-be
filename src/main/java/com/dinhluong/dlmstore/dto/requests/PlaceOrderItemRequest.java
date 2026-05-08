@@ -7,6 +7,6 @@ import lombok.Data;
 @Data
 public class PlaceOrderItemRequest {
     private Long variantId;
-    private Integer quantity; // Số lượng của sản phẩm chính
+    private Integer quantity;
     private List<Long> comboIds;
 }

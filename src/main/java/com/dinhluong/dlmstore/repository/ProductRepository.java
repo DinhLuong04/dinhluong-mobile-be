@@ -12,48 +12,46 @@ import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 import com.dinhluong.dlmstore.entity.Product;
-import com.dinhluong.dlmstore.entity.ProductVariant;
 import com.dinhluong.dlmstore.entity.Enums.ProductStatus;
 import com.dinhluong.dlmstore.entity.Enums.ProductType;
 
 @Repository
 public interface ProductRepository extends JpaRepository<Product, Long>, JpaSpecificationExecutor<Product> {
 
-    Optional<Product> findBySlug(String slug);
+       Optional<Product> findBySlug(String slug);
 
-    @Query("""
-                SELECT p FROM Product p
-                WHERE p.status = 'ACTIVE' AND p.productType='MAIN'
-                AND (LOWER(p.name) LIKE LOWER(CONCAT('%', :keyword, '%')) OR
-                LOWER(p.searchKeywords) LIKE LOWER(CONCAT('%', :keyword, '%')))
-            """)
-    Page<Product> searchByKeyword(@Param("keyword") String keyword, Pageable pageable);
+       @Query("""
+                         SELECT p FROM Product p
+                         WHERE p.status = 'ACTIVE' AND p.productType='MAIN'
+                         AND (LOWER(p.name) LIKE LOWER(CONCAT('%', :keyword, '%')) OR
+                         LOWER(p.searchKeywords) LIKE LOWER(CONCAT('%', :keyword, '%')))
+                     """)
+       Page<Product> searchByKeyword(@Param("keyword") String keyword, Pageable pageable);
 
-    List<Product> findBySlugIn(List<String> slugs);
+       List<Product> findBySlugIn(List<String> slugs);
 
-   // CẬP NHẬT QUERY NÀY
-    @Query("SELECT p FROM Product p WHERE " +
-           "(:productType IS NULL OR p.productType = :productType) AND " +
-           "(:keyword IS NULL OR LOWER(p.name) LIKE LOWER(CONCAT('%', :keyword, '%'))) AND " +
-           "(:status IS NULL OR p.status = :status) AND " +
-           "(:brandId IS NULL OR p.brand.id = :brandId) AND " +        // <--- Thêm dòng này
-           "(:categoryId IS NULL OR p.category.id = :categoryId) AND " + // <--- Thêm dòng này
-           "p.isDeleted = false") // Đảm bảo không lấy sản phẩm đã xóa mềm
-    Page<Product> findWithFilters(
-            @Param("productType") ProductType productType,
-            @Param("keyword") String keyword,
-            @Param("status") ProductStatus status,
-            @Param("brandId") Long brandId,       // <--- Thêm tham số
-            @Param("categoryId") Long categoryId, // <--- Thêm tham số
-            Pageable pageable);
+       // CẬP NHẬT QUERY NÀY
+       @Query("SELECT p FROM Product p WHERE " +
+                     "(:productType IS NULL OR p.productType = :productType) AND " +
+                     "(:keyword IS NULL OR LOWER(p.name) LIKE LOWER(CONCAT('%', :keyword, '%'))) AND " +
+                     "(:status IS NULL OR p.status = :status) AND " +
+                     "(:brandId IS NULL OR p.brand.id = :brandId) AND " + 
+                     "(:categoryId IS NULL OR p.category.id = :categoryId) AND " + 
+                     "p.isDeleted = false") 
+       Page<Product> findWithFilters(
+                     @Param("productType") ProductType productType,
+                     @Param("keyword") String keyword,
+                     @Param("status") ProductStatus status,
+                     @Param("brandId") Long brandId, // <--- Thêm tham số
+                     @Param("categoryId") Long categoryId, // <--- Thêm tham số
+                     Pageable pageable);
 
-    long countByIsFeaturedTrue();
+       long countByIsFeaturedTrue();
 
-    @Query("SELECT p FROM Product p " +
-           "WHERE p.isFeatured = true " +
-           "AND p.status = 'ACTIVE' " +
-           "ORDER BY p.soldQuantity DESC")
-    List<Product> findFeaturedProducts(Pageable pageable);
+       @Query("SELECT p FROM Product p " +
+                     "WHERE p.isFeatured = true " +
+                     "AND p.status = 'ACTIVE' " +
+                     "ORDER BY p.soldQuantity DESC")
+       List<Product> findFeaturedProducts(Pageable pageable);
 
-    
 }

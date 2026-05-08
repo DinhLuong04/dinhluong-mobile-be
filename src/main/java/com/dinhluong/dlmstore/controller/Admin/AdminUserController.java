@@ -22,7 +22,7 @@ public class AdminUserController {
     public ResponseEntity<ApiResponse<List<UserResponse>>> getAllUsers(
             @RequestParam(required = false) String keyword,
             @RequestParam(required = false) Boolean isEnabled) {
-        
+
         List<UserResponse> users = userService.getAdminUsers(keyword, isEnabled);
         return ResponseEntity.ok(ApiResponse.success("Lấy danh sách người dùng thành công", users));
     }

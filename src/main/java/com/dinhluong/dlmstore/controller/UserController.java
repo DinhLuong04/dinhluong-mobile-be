@@ -4,11 +4,11 @@ import com.dinhluong.dlmstore.dto.ApiResponse;
 import com.dinhluong.dlmstore.dto.requests.ChangePasswordRequest;
 import com.dinhluong.dlmstore.dto.responses.UserProfileResponse;
 import com.dinhluong.dlmstore.dto.responses.UserProfileStatsResponse;
-import com.dinhluong.dlmstore.security.CustomUserPrincipal; // Nhớ import class này
+import com.dinhluong.dlmstore.security.CustomUserPrincipal;
 import com.dinhluong.dlmstore.service.UserProfileService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.core.annotation.AuthenticationPrincipal; // Import annotation của Spring Security
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -25,8 +25,6 @@ public class UserController {
 
         Long userId = currentUser.getId();
         UserProfileStatsResponse stats = userProfileService.getUserStats(userId);
-
-        // Bọc dữ liệu vào ApiResponse.success
         return ResponseEntity.ok(ApiResponse.success("Lấy thông tin tổng quan thành công", stats));
     }
 

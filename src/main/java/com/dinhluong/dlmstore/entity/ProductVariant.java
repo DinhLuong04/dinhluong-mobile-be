@@ -9,7 +9,7 @@ import lombok.*;
 @Table(name = "product_variants")
 @Data
 
-public class ProductVariant  {
+public class ProductVariant {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
@@ -19,26 +19,26 @@ public class ProductVariant  {
     private Product product;
     @Column(name = "sku")
     private String sku;
-    
+
     private String rom;
-    
+
     private String ram;
 
-    @Column(name = "color_name") // <--- Đã sửa
+    @Column(name = "color_name")
     private String colorName;
 
-    @Column(name = "color_hex") // <--- Đã sửa
+    @Column(name = "color_hex")
     private String colorHex;
 
     private BigDecimal price;
 
-    @Column(name = "stock_quantity") // <--- Đã sửa
+    @Column(name = "stock_quantity")
     private Integer stockQuantity;
 
-    @Column(name = "image_url") // <--- Đã sửa
+    @Column(name = "image_url")
     private String imageUrl;
 
-    @Column(name = "is_active") // <--- Đã sửa
+    @Column(name = "is_active")
     private boolean isActive = true;
     @Version
     private Integer version;

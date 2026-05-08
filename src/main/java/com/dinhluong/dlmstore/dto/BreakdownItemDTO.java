@@ -3,9 +3,9 @@ package com.dinhluong.dlmstore.dto;
 import lombok.*;
 
 @Data
-    @Builder
+@Builder
 public class BreakdownItemDTO {
     private Integer star;
-        private Double percent;
-        private Long count;
+    private Double percent;
+    private Long count;
 }

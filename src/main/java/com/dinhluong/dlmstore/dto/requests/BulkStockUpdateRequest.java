@@ -5,7 +5,7 @@ import java.util.List;
 
 @Data
 public class BulkStockUpdateRequest {
-    private Long productId; // ID của sản phẩm cha để tính lại tổng kho 1 lần
+    private Long productId;
     private List<StockItem> stocks;
 
     @Data

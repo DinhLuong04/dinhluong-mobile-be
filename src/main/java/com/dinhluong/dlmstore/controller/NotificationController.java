@@ -17,12 +17,13 @@ public class NotificationController {
 
     @GetMapping
     public ResponseEntity<?> getMyNotifications(@AuthenticationPrincipal CustomUserPrincipal user) {
-        return ResponseEntity.ok(ApiResponse.success("Thành công", notificationService.getUserNotifications(user.getId())));
+        return ResponseEntity
+                .ok(ApiResponse.success("Thành công", notificationService.getUserNotifications(user.getId())));
     }
+
     @PutMapping("/{id}/read")
     public ResponseEntity<?> markAsRead(@PathVariable Long id, @AuthenticationPrincipal CustomUserPrincipal user) {
-        // Truyền cả user.getId() để đảm bảo user chỉ có thể đọc thông báo của chính họ
-        notificationService.markAsRead(id, user.getId()); 
+        notificationService.markAsRead(id, user.getId());
         return ResponseEntity.ok(ApiResponse.success("Đã đọc thông báo", null));
     }
 
@@ -31,6 +32,7 @@ public class NotificationController {
         notificationService.markAllAsRead(user.getId());
         return ResponseEntity.ok(ApiResponse.success("Đã đọc tất cả", null));
     }
+
     @GetMapping("/unread-count")
     public ResponseEntity<?> getUnreadCount(@AuthenticationPrincipal CustomUserPrincipal user) {
         long count = notificationService.getUnreadCount(user.getId());
