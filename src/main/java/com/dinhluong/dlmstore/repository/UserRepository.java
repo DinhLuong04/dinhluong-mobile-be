@@ -17,6 +17,11 @@ public interface UserRepository extends JpaRepository<Users, Long> {
     // Tìm user theo email (login)
     Optional<Users> findByEmail(String email);
 
+    long countByIsEnabledTrue();
+
+    // Đếm tổng số user đang bị khóa
+    long countByIsEnabledFalse();
+
     // Check tồn tại email (register)
     boolean existsByEmail(String email);
 
