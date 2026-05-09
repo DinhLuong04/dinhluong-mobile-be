@@ -4,8 +4,10 @@ import com.dinhluong.dlmstore.dto.requests.PlaceOrderRequest;
 import com.dinhluong.dlmstore.dto.responses.ComboItemDetail;
 import com.dinhluong.dlmstore.dto.responses.OrderItemResponse;
 import com.dinhluong.dlmstore.dto.responses.OrderResponse;
+import com.dinhluong.dlmstore.dto.responses.OrderStatsResponse;
 import com.dinhluong.dlmstore.dto.requests.PlaceOrderItemRequest;
 import com.dinhluong.dlmstore.entity.Order;
+import com.dinhluong.dlmstore.entity.Order.OrderStatus;
 import com.dinhluong.dlmstore.entity.OrderItem;
 import com.dinhluong.dlmstore.entity.Payment;
 import com.dinhluong.dlmstore.entity.Product;
@@ -25,6 +27,7 @@ import com.dinhluong.dlmstore.repository.ProductVariantRepository;
 import com.dinhluong.dlmstore.repository.UserVoucherRepository;
 
 import com.dinhluong.dlmstore.repository.VoucherRepository;
+import com.dinhluong.dlmstore.service.impl.Excels.OrderExcelExportService;
 
 import lombok.RequiredArgsConstructor;
 
@@ -32,6 +35,7 @@ import org.springframework.stereotype.Service;
 
 import org.springframework.transaction.annotation.Transactional;
 
+import java.io.ByteArrayInputStream;
 import java.math.BigDecimal;
 
 import java.time.LocalDateTime;
@@ -48,6 +52,7 @@ import java.util.stream.Collectors;
 @Service
 @RequiredArgsConstructor
 public class OrderService {
+    private final OrderExcelExportService orderExcelExportService;
     private final OrderRepository orderRepository;
 
     private final OrderItemRepository orderItemRepository;
@@ -79,7 +84,7 @@ public class OrderService {
                 .receiverPhone(request.getReceiverPhone())
 
                 .receiverAddress(request.getReceiverAddress())
-
+                .userNote(request.getNote()) // 🔥 THÊM GHI CHÚ CỦA USER
                 .status(Order.OrderStatus.PENDING)
 
                 .totalAmount(BigDecimal.ZERO)
@@ -205,7 +210,7 @@ public class OrderService {
             }
 
             finalPrice = totalAmount.subtract(discountValue);
-
+            order.setDiscountAmount(discountValue);
             // 3.5. Đánh dấu User đã sử dụng Voucher này (Xóa khỏi danh sách khả dụng của
             // họ)
 
@@ -355,7 +360,9 @@ public class OrderService {
                 .createdAt(order.getCreatedAt()).receiverName(order.getReceiverName())
                 .receiverPhone(order.getReceiverPhone()).receiverAddress(order.getReceiverAddress())
                 .paymentMethod(pMethod) // 🔥
-                                           // THÊM
+                  .userNote(order.getUserNote())             // THIẾU DÒNG NÀY SẼ BỊ NULL
+        .discountAmount(order.getDiscountAmount()) // THIẾU DÒNG NÀY SẼ BỊ NULL
+        .cancelledBy(order.getCancelledBy())                         // THÊM
                 .paymentStatus(pStatus) // 🔥 THÊM
                 .reason(order.getReason()) // 🔥 THÊM
                 .items(itemResponses).build();
@@ -394,6 +401,10 @@ public class OrderService {
                 .paymentMethod(pMethod)
                 .paymentStatus(pStatus)
                 .reason(order.getReason())
+                .userNote(order.getUserNote())
+                .deliveredAt(order.getDeliveredAt())
+                .discountAmount(order.getDiscountAmount())
+                .cancelledBy(order.getCancelledBy()) // 🔥 THÊM NGƯỜI HỦY
                 .items(itemResponses) // 🔥 NHÉT DANH SÁCH ITEM VÀO RESPONSE
                 .build();
     }
@@ -445,7 +456,11 @@ public class OrderService {
                     .status(order.getStatus()).createdAt(order.getCreatedAt()).receiverName(order.getReceiverName())
                     .receiverPhone(order.getReceiverPhone()).receiverAddress(order.getReceiverAddress())
                     .paymentMethod(pMethod) // 🔥
-                     .reason(order.getReason())                       // THÊM
+                     .reason(order.getReason())
+                     .userNote(order.getUserNote())
+                     .deliveredAt(order.getDeliveredAt())    
+                     .discountAmount(order.getDiscountAmount())   
+                     .cancelledBy(order.getCancelledBy())                // THÊM
                     .paymentStatus(pStatus) // 🔥 THÊM
                     .items(itemResponses).build();
         }).collect(Collectors.toList());
@@ -498,6 +513,7 @@ public class OrderService {
         // 🔥 KỊCH BẢN C: GIAO HÀNG THÀNH CÔNG -> MỚI BẮT ĐẦU CỘNG LƯỢT BÁN
         // ==============================================================
         if (newStatus == Order.OrderStatus.DELIVERED && currentStatus != Order.OrderStatus.DELIVERED) {
+            order.setDeliveredAt(LocalDateTime.now());
             for (OrderItem item : items) {
                 // Tăng sold cho sản phẩm chính
                 increaseSoldQuantity(item.getProductVariantId(), item.getQuantity());
@@ -517,11 +533,19 @@ public class OrderService {
 
         // 3. Cập nhật trạng thái mới
         order.setStatus(newStatus);
-        Order updatedOrder = orderRepository.save(order);
-        // 🔥 BỔ SUNG: Lưu lý do hủy/hoàn nếu có
+        
+        // Gán lý do nếu có
         if (reason != null && !reason.trim().isEmpty()) {
             order.setReason(reason);
         }
+
+        // Gán người hủy nếu trạng thái là HỦY hoặc HOÀN
+        if (newStatus == Order.OrderStatus.CANCELLED || newStatus == Order.OrderStatus.RETURNED) {
+            order.setCancelledBy(actionBy);
+        }
+
+        // 🔥 GÁN XONG XUÔI HẾT RỒI MỚI LƯU (SAVE)
+        Order updatedOrder = orderRepository.save(order);
         // 4. 🔥 TẠO VÀ GỬI THÔNG BÁO CHO USER (Đã FIX lỗi truyền tham số)
         String vnStatus = translateStatus(newStatus);
 
@@ -637,5 +661,60 @@ public class OrderService {
             productRepository.save(product);
         }
     }
+
+
+    public OrderStatsResponse getOrderStatistics() {
+    List<Object[]> results = orderRepository.countOrdersByStatus();
+    
+    long pending = 0, processing = 0, shipped = 0, delivered = 0, cancelledOrReturned = 0, total = 0;
+
+    for (Object[] row : results) {
+        Order.OrderStatus status = (Order.OrderStatus) row[0];
+        long count = (Long) row[1];
+        total += count;
+
+        switch (status) {
+            case PENDING -> pending = count;
+            case PROCESSING -> processing = count;
+            case SHIPPED -> shipped = count;
+            case DELIVERED -> delivered = count;
+            case CANCELLED, RETURNED -> cancelledOrReturned += count;
+        }
+    }
+
+    return OrderStatsResponse.builder()
+            .pending(pending).processing(processing).shipped(shipped)
+            .delivered(delivered).cancelledOrReturned(cancelledOrReturned)
+            .total(total).build();
+}
+
+/**
+ * Cập nhật trạng thái cho nhiều đơn hàng cùng lúc
+ */
+@Transactional
+public void updateStatusBatch(List<Long> ids, OrderStatus newStatusStr, String reason, String actionBy) {
+    if (ids == null || ids.isEmpty()) return;
+    
+    for (Long id : ids) {
+        try {
+            // Tận dụng lại 100% logic hoàn kho, cộng lượt bán, gửi thông báo đã viết
+            updateOrderStatus(id, newStatusStr.name(), reason, actionBy);
+        } catch (Exception e) {
+            // Nếu có 1 đơn bị lỗi (vd: đơn đã Giao không thể Hủy), 
+            // thì log ra và bỏ qua, tiếp tục chạy các đơn khác trong danh sách
+            System.err.println("Không thể cập nhật đơn hàng #" + id + ": " + e.getMessage());
+        }
+    }
+}
+
+public ByteArrayInputStream exportOrdersExcel(String status, String keyword) {
+
+    List<OrderResponse> orders = getAdminOrders(status, keyword);
+
+    return orderExcelExportService.exportToExcel(
+            orders,
+            null
+    );
+}
 
 }

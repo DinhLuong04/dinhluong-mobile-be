@@ -20,5 +20,9 @@ public class OrderResponse {
     private String paymentMethod;
     private String paymentStatus;
     private String reason;
+    private String userNote;
+    private LocalDateTime deliveredAt;
+    private BigDecimal discountAmount;
+    private String cancelledBy;
     private List<OrderItemResponse> items;
 }

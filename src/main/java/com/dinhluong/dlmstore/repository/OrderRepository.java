@@ -2,6 +2,7 @@ package com.dinhluong.dlmstore.repository;
 
 import com.dinhluong.dlmstore.entity.Order;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
@@ -62,4 +63,13 @@ public interface OrderRepository extends JpaRepository<Order, Long> {
        @Query("SELECT o FROM Order o WHERE o.status = 'DELIVERED' AND o.createdAt >= :startDate AND o.createdAt <= :endDate ORDER BY o.createdAt ASC")
        List<Order> findDeliveredOrdersForTrends(@Param("startDate") LocalDateTime startDate,
                      @Param("endDate") LocalDateTime endDate);
+
+       // 1. Truy vấn đếm số lượng đơn hàng theo từng trạng thái
+       @Query("SELECT o.status, COUNT(o.id) FROM Order o GROUP BY o.status")
+       List<Object[]> countOrdersByStatus();
+
+       // 2. Cập nhật trạng thái hàng loạt (Bulk Update)
+       @Modifying
+       @Query("UPDATE Order o SET o.status = :status WHERE o.id IN :ids")
+       int updateStatusBatch(@Param("ids") List<Long> ids, @Param("status") Order.OrderStatus status);
 }

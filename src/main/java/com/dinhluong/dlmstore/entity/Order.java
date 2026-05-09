@@ -40,13 +40,23 @@ public class Order {
 
     @Column(name = "receiver_address", columnDefinition = "TEXT")
     private String receiverAddress;
-
+    @Column(name = "cancelled_by")
+    private String cancelledBy;
     @Column(name = "created_at", updatable = false)
     private LocalDateTime createdAt;
     @Column(name = "reason", columnDefinition = "TEXT")
     private String reason;
     @Column(name = "updated_at")
     private LocalDateTime updatedAt;
+    // Trong file Order.java thêm 3 dòng này:
+    @Column(name = "discount_amount")
+    private BigDecimal discountAmount;
+
+    @Column(name = "user_note", columnDefinition = "TEXT")
+    private String userNote;
+
+    @Column(name = "delivered_at")
+    private LocalDateTime deliveredAt;
 
     @PrePersist
     protected void onCreate() {
@@ -63,6 +73,6 @@ public class Order {
     }
 
     public enum OrderStatus {
-        PENDING, PROCESSING, SHIPPED, DELIVERED, RETURNED, CANCELLED 
+        PENDING, PROCESSING, SHIPPED, DELIVERED, RETURNED, CANCELLED
     }
 }
