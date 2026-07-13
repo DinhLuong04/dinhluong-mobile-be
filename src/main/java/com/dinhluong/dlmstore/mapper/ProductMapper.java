@@ -97,6 +97,8 @@ public abstract class ProductMapper {
     @Mapping(source = "highlightSpecs", target = "highlightSpecs")
     @Mapping(source = "thumbnailUrl", target = "thumbnail")
     @Mapping(target = "specsData", expression = "java(mapJsonToSpecs(product.getSpecificationsJson()))")
+    @Mapping(source = "brand.name", target = "brandName")
+    @Mapping(source = "category.name", target = "categoryName")
     @Mapping(target = "productImages", ignore = true)
     @Mapping(target = "storageOptions", ignore = true)
     @Mapping(target = "colorOptions", ignore = true)

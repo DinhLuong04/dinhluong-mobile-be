@@ -4,6 +4,7 @@ import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 
+import com.dinhluong.dlmstore.repository.projections.UserStatsProjection;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
@@ -62,4 +63,20 @@ public interface UserRepository extends JpaRepository<Users, Long> {
 
     @Query("SELECT COUNT(u) FROM Users u WHERE u.createdAt >= :startDate AND u.createdAt <= :endDate")
     long countNewUsers(@Param("startDate") LocalDateTime startDate, @Param("endDate") LocalDateTime endDate);
+
+    @Query(value = "SELECT u.email as email, u.full_name as fullName, u.phone as phone, " +
+            "r.name as roleName, u.is_enabled as isEnabled, " +
+            "COUNT(o.id) as totalOrders, " +
+            "SUM(CASE WHEN o.status = 'DELIVERED' THEN 1 ELSE 0 END) as successOrders, " +
+            "SUM(CASE WHEN o.status = 'CANCELLED' THEN 1 ELSE 0 END) as cancelledOrders, " +
+            // Đã sửa o.total_price thành o.total_amount
+            "SUM(CASE WHEN o.status = 'DELIVERED' THEN o.total_amount ELSE 0 END) as totalSpent " +
+            "FROM users u " +
+            "JOIN roles r ON u.role_id = r.id " +
+            "LEFT JOIN orders o ON u.id = o.user_id " +
+            "WHERE (:keyword IS NULL OR u.email LIKE %:keyword% OR u.full_name LIKE %:keyword%) " +
+            "AND (:isEnabled IS NULL OR u.is_enabled = :isEnabled) " +
+            "GROUP BY u.id", nativeQuery = true)
+    List<UserStatsProjection> searchUserStats(@Param("keyword") String keyword, @Param("isEnabled") Boolean isEnabled);
+
 }

@@ -22,6 +22,15 @@ public class OrderItem {
     @Column(name = "product_variant_id")
     private Long productVariantId;
     private Integer quantity;
+    @Column(name = "product_name")
+    private String productName; // Lưu tên sản phẩm lúc mua
+
+    @Column(name = "product_image")
+    private String productImage; // Lưu ảnh sản phẩm lúc mua
+    @Column(name = "slug")
+    private String slug;
+    @Column(name = "variant_name")
+    private String variantName;
     @Column(name = "price_at_purchase", precision = 15, scale = 2)
     private BigDecimal priceAtPurchase;
     @Column(name = "combo_items", columnDefinition = "TEXT")

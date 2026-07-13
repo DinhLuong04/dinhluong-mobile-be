@@ -32,10 +32,8 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 public class ProductService {
 
-    @Autowired
-    private final ProductRepository productRepository;
 
-    @Autowired
+    private final ProductRepository productRepository;
     private final ProductMapper productMapper;
 
     @Transactional(readOnly = true)
@@ -139,216 +137,276 @@ public class ProductService {
         }
 
         spec = spec.and((root, query, cb) -> cb.equal(root.get("status"), ProductStatus.ACTIVE));
+        spec = spec.and((root, query, cb) -> cb.equal(root.get("isDeleted"), false));
 
         return productRepository.findAll(spec, pageable).map(productMapper::toCardResponse);
     }
 
     @Transactional(readOnly = true)
     public ProductDetailResponse getProductBySlug(String slug) {
-        Product product = productRepository.findBySlug(slug)
-                .orElseThrow(() -> new RuntimeException("Sản phẩm không tồn tại: " + slug));
+        Product product = productRepository.findBySlugAndStatusAndIsDeletedFalse(slug, ProductStatus.ACTIVE)
+                .orElseThrow(() -> new RuntimeException("Sản phẩm không tồn tại hoặc đã ngừng kinh doanh: " + slug));
         return productMapper.toDetailResponse(product);
     }
 
     public List<ProductDetailResponse> getProductsBySlugs(List<String> slugs) {
-        List<Product> products = productRepository.findBySlugIn(slugs);
+        List<Product> products = productRepository.findBySlugInAndStatusAndIsDeletedFalse(slugs, ProductStatus.ACTIVE);
         return products.stream()
                 .map(productMapper::toDetailResponse)
                 .collect(Collectors.toList());
     }
 
-    // TẠO TỪ KHÓA TÌM KIẾM (SEARCH KEYWORDS GENERATOR)
+   // TẠO TỪ KHÓA TÌM KIẾM (SEARCH KEYWORDS GENERATOR)
+   public String generateSearchKeywords(Product product) {
 
-    public String generateSearchKeywords(Product product) {
+       // Chốt chặn 1: Nhỡ truyền vào một object null thì return luôn
+       if (product == null) {
+           return "";
+       }
 
-        Set<String> keywords = new HashSet<>();
+       Set<String> keywords = new HashSet<>();
 
-        String nameUnsigned = StringUtils.unAccent(product.getName());
+       // Chốt chặn 2: Xử lý an toàn cho Name
+       String safeName = product.getName() != null ? product.getName() : "";
+       String nameUnsigned = StringUtils.unAccent(safeName);
+       if (nameUnsigned == null) {
+           nameUnsigned = ""; // Đảm bảo nameUnsigned không bao giờ null để không bị lỗi .contains() ở dưới
+       }
 
-        keywords.add(product.getName());
-        keywords.add(nameUnsigned);
-        keywords.add(product.getSlug().replace("-", " "));
+       if (StringUtils.hasText(safeName)) {
+           keywords.add(safeName);
+           keywords.add(nameUnsigned);
+       }
 
-        String brandName = "";
-        if (product.getBrand() != null) {
-            brandName = StringUtils.unAccent(product.getBrand().getName());
-            keywords.add(brandName);
-        }
-        if (product.getCategory() != null) {
-            keywords.add(StringUtils.unAccent(product.getCategory().getName()));
-        }
+       if (product.getSlug() != null) {
+           keywords.add(product.getSlug().replace("-", " "));
+       }
 
-        // NHÓM BIẾN THỂ (MÀU SẮC, RAM, ROM)
-        if (product.getVariants() != null && !product.getVariants().isEmpty()) {
-            for (ProductVariant v : product.getVariants()) {
-                if (StringUtils.hasText(v.getColorName())) {
-                    String color = StringUtils.unAccent(v.getColorName());
-                    keywords.add(color);
-                    for (String sub : color.split(" "))
-                        keywords.add(sub);
-                }
-                if (StringUtils.hasText(v.getRom())) {
-                    String rom = v.getRom().toLowerCase().replace(" ", "");
-                    keywords.add(rom);
-                    keywords.add(rom.replace("gb", ""));
-                }
-                if (StringUtils.hasText(v.getRam())) {
-                    keywords.add(v.getRam().toLowerCase().replace(" ", ""));
-                }
-            }
-        }
+       // Chốt chặn 3: Xử lý an toàn cho Brand
+       String brandName = "";
+       if (product.getBrand() != null && product.getBrand().getName() != null) {
+           String unAccentBrand = StringUtils.unAccent(product.getBrand().getName());
+           if (unAccentBrand != null) {
+               brandName = unAccentBrand.toLowerCase();
+               keywords.add(brandName);
+           }
+       }
 
-        // QUÉT SÂU JSON THÔNG SỐ & SPECIAL FEATURES
-        StringBuilder specsBuilder = new StringBuilder();
+       // Chốt chặn 4: Xử lý an toàn cho Category
+       if (product.getCategory() != null && product.getCategory().getName() != null) {
+           String unAccentCat = StringUtils.unAccent(product.getCategory().getName());
+           if (unAccentCat != null) {
+               keywords.add(unAccentCat);
+           }
+       }
 
-        if (StringUtils.hasText(product.getSpecialFeatures())) {
-            specsBuilder.append(StringUtils.unAccent(product.getSpecialFeatures())).append(" ");
-        }
-        if (StringUtils.hasText(product.getHighlightFeatures())) {
-            specsBuilder.append(StringUtils.unAccent(product.getHighlightFeatures())).append(" ");
-        }
+       // NHÓM BIẾN THỂ (MÀU SẮC, RAM, ROM)
+       if (product.getVariants() != null && !product.getVariants().isEmpty()) {
+           for (ProductVariant v : product.getVariants()) {
+               if (StringUtils.hasText(v.getColorName())) {
+                   String color = StringUtils.unAccent(v.getColorName());
+                   if (color != null) {
+                       keywords.add(color);
+                       for (String sub : color.split(" "))
+                           keywords.add(sub);
+                   }
+               }
+               if (StringUtils.hasText(v.getRom())) {
+                   String rom = v.getRom().toLowerCase().replace(" ", "");
+                   keywords.add(rom);
+                   keywords.add(rom.replace("gb", ""));
 
-        // Duyệt cây JSON Specifications
-        JsonNode jsonSpec = product.getSpecificationsJson();
-        if (jsonSpec != null && jsonSpec.isArray()) {
-            for (JsonNode group : jsonSpec) {
-                JsonNode items = group.get("items");
-                if (items != null && items.isArray()) {
-                    for (JsonNode item : items) {
-                        if (item.has("value")) {
-                            String val = StringUtils.unAccent(item.get("value").asText());
-                            // Chỉ lấy những giá trị quan trọng
-                            if (val.contains("snapdragon") || val.contains("dimensity") ||
-                                    val.contains("helio") || val.contains("exynos") ||
-                                    val.contains("apple a") || val.contains("bionic")) {
-                                specsBuilder.append(val).append(" ");
-                            }
-                            if (val.contains("mah") || val.contains("sac nhanh")) {
-                                specsBuilder.append(val).append(" ");
-                                if (val.contains("mah"))
-                                    keywords.add("pin trau");
-                            }
-                            if (val.contains("hz") || val.contains("oled") || val.contains("amoled")) {
-                                specsBuilder.append(val).append(" ");
-                            }
-                            if (val.contains("mp") && !val.contains("mpeg")) {
-                                specsBuilder.append(val).append(" ");
-                            }
-                        }
-                    }
-                }
-            }
-        }
+                   // THÊM LOGIC: BỘ NHỚ LỚN
+                   if (rom.contains("512") || rom.contains("1tb")) {
+                       keywords.add("bo nho lon dung luong cao luu tru nhieu");
+                   }
+               }
+               if (StringUtils.hasText(v.getRam())) {
+                   keywords.add(v.getRam().toLowerCase().replace(" ", ""));
+               }
+           }
+       }
 
-        String fullSpecs = specsBuilder.toString();
-        if (fullSpecs.contains("snapdragon"))
-            keywords.add("snapdragon chip snap");
-        if (fullSpecs.contains("dimensity"))
-            keywords.add("dimensity");
-        if (fullSpecs.contains("apple a"))
-            keywords.add("chip a");
-        if (fullSpecs.contains("5g"))
-            keywords.add("5g");
-        if (fullSpecs.contains("120") && fullSpecs.contains("hz"))
-            keywords.add("120hz");
-        if (fullSpecs.contains("gap") || fullSpecs.contains("fold"))
-            keywords.add("gap man hinh gap");
-        if (fullSpecs.contains("gaming") || fullSpecs.contains("game"))
-            keywords.add("gaming choi game");
+       // QUÉT SÂU JSON THÔNG SỐ & SPECIAL FEATURES
+       StringBuilder specsBuilder = new StringBuilder();
 
-        // LOGIC THEO HÃNG
-        switch (brandName) {
-            case "iphone":
-            case "apple":
-                keywords.add("ip tao nha tao");
-                keywords.add(nameUnsigned.replace("iphone", "ip"));
-                if (nameUnsigned.contains("pro max"))
-                    keywords.add("prm prom promax");
-                if (nameUnsigned.contains("plus"))
-                    keywords.add("plu");
-                break;
+       if (StringUtils.hasText(product.getSpecialFeatures())) {
+           String safeSpecial = StringUtils.unAccent(product.getSpecialFeatures());
+           if (safeSpecial != null) specsBuilder.append(safeSpecial).append(" ");
+       }
 
-            case "samsung":
-                keywords.add("ss sam galaxu");
-                if (nameUnsigned.contains("ultra"))
-                    keywords.add("s25u s24u s23u ultra u");
-                if (nameUnsigned.contains("fold"))
-                    keywords.add("zfold fold gap");
-                if (nameUnsigned.contains("flip"))
-                    keywords.add("zflip flip gap");
-                if (nameUnsigned.contains("fe"))
-                    keywords.add("fan edition");
-                if (nameUnsigned.contains("galaxy a"))
-                    keywords.add(nameUnsigned.replace("galaxy a", "a"));
-                break;
+       if (StringUtils.hasText(product.getHighlightFeatures())) {
+           String safeHighlight = StringUtils.unAccent(product.getHighlightFeatures());
+           if (safeHighlight != null) specsBuilder.append(safeHighlight).append(" ");
+       }
 
-            case "oppo":
-                keywords.add("opo son tung");
-                if (nameUnsigned.contains("reno"))
-                    keywords.add("r" + nameUnsigned.replaceAll("[^0-9]", ""));
-                if (nameUnsigned.contains("find"))
-                    keywords.add("fin");
-                break;
+       // Duyệt cây JSON Specifications (Phần này bạn đã làm cực kỳ an toàn rồi, giữ nguyên)
+       JsonNode jsonSpec = product.getSpecificationsJson();
+       if (jsonSpec != null && jsonSpec.isArray()) {
+           for (JsonNode group : jsonSpec) {
+               JsonNode items = group.get("items");
+               if (items != null && items.isArray()) {
+                   for (JsonNode item : items) {
+                       if (item.has("value")) {
+                           String rawVal = item.get("value").asText();
+                           if (rawVal != null) {
+                               String unAccentVal = StringUtils.unAccent(rawVal);
+                               if (unAccentVal != null) {
+                                   String val = unAccentVal.toLowerCase();
 
-            case "xiaomi":
-                keywords.add("mi xiao mi my");
-                if (nameUnsigned.contains("redmi"))
-                    keywords.add("remi redmi");
-                if (nameUnsigned.contains("note"))
-                    keywords.add("not");
-                if (nameUnsigned.contains("poco"))
-                    keywords.add("poco phone");
-                break;
+                                   // Check Chipset
+                                   if (val.contains("snapdragon") || val.contains("dimensity") ||
+                                           val.contains("helio") || val.contains("exynos") ||
+                                           val.contains("apple a") || val.contains("bionic")) {
+                                       specsBuilder.append(val).append(" ");
+                                   }
 
-            case "realme":
-                keywords.add("real me riu mi");
-                break;
-            case "vivo":
-                keywords.add("bi bo");
-                break;
-            case "honor":
-                keywords.add("honour ho no");
-                break;
-            case "tecno":
-                keywords.add("techno tekno");
-                break;
+                                   // Check Pin & Sạc
+                                   if (val.contains("mah")) {
+                                       specsBuilder.append(val).append(" ");
+                                       // FIX BUG: Chỉ pin 5000mAh trở lên mới tính là pin trâu
+                                       if (val.contains("5000") || val.contains("5100") || val.contains("5500") || val.contains("6000")) {
+                                           keywords.add("pin trau dung lau");
+                                       }
+                                   }
+                                   if (val.contains("sac nhanh")) {
+                                       specsBuilder.append(val).append(" ");
+                                       keywords.add("sac nhanh sieu toc");
+                                   }
 
-            case "redmagic":
-            case "zte nubia":
-                keywords.add("gaming game choi game may game nubia");
-                break;
+                                   // Check Màn hình
+                                   if (val.contains("hz") || val.contains("oled") || val.contains("amoled")) {
+                                       specsBuilder.append(val).append(" ");
+                                   }
 
-            case "nokia":
-            case "mobell":
-            case "masstel":
-            case "itel":
-            case "inoi":
-            case "benco":
-                if (product.getDisplayPrice() != null
-                        && product.getDisplayPrice().compareTo(new BigDecimal(1500000)) < 0) {
-                    keywords.add("cuc gach phim bam nguoi gia loa to");
-                }
-                break;
+                                   // Check Camera (THÊM LOGIC CHỤP ẢNH ĐẸP)
+                                   if (val.contains("mp") && !val.contains("mpeg")) {
+                                       specsBuilder.append(val).append(" ");
+                                       keywords.add("chup anh dep camera ngon quay phim vlog selfie");
+                                   }
 
-            case "viettel":
-                keywords.add("vt sim song");
-                break;
-        }
+                                   // Check Chống nước (THÊM LOGIC IP68)
+                                   if (val.contains("ip68") || val.contains("ip67")) {
+                                       specsBuilder.append(val).append(" ");
+                                       keywords.add("chong nuoc di mua");
+                                   }
+                               }
+                           }
+                       }
+                   }
+               }
+           }
+       }
 
-        // PHÂN KHÚC GIÁ
-        if (product.getDisplayPrice() != null) {
-            double price = product.getDisplayPrice().doubleValue();
-            if (price < 3000000) {
-                keywords.add("gia re sinh vien phu huynh");
-            } else if (price > 20000000) {
-                keywords.add("cao cap flagship xin sang chanh");
-            } else if (price >= 3000000 && price <= 7000000) {
-                keywords.add("tam trung");
-            }
-        }
+       String fullSpecs = specsBuilder.toString();
+       if (fullSpecs.contains("snapdragon"))
+           keywords.add("snapdragon chip snap");
+       if (fullSpecs.contains("dimensity"))
+           keywords.add("dimensity");
+       if (fullSpecs.contains("apple a"))
+           keywords.add("chip a");
+       if (fullSpecs.contains("5g"))
+           keywords.add("5g");
+       if (fullSpecs.contains("120") && fullSpecs.contains("hz"))
+           keywords.add("120hz");
+       if (fullSpecs.contains("gap") || fullSpecs.contains("fold"))
+           keywords.add("gap man hinh gap");
+       if (fullSpecs.contains("gaming") || fullSpecs.contains("game"))
+           keywords.add("gaming choi game");
 
-        return String.join(" ", keywords).toLowerCase().trim();
-    }
+       // LOGIC THEO HÃNG (Lúc này nameUnsigned chắc chắn không null nên không bao giờ crash)
+       switch (brandName) {
+           case "iphone":
+           case "apple":
+               keywords.add("ip tao nha tao");
+               keywords.add(nameUnsigned.replace("iphone", "ip"));
+               if (nameUnsigned.contains("pro max"))
+                   keywords.add("prm prom promax");
+               if (nameUnsigned.contains("plus"))
+                   keywords.add("plu");
+               break;
+
+           case "samsung":
+               keywords.add("ss sam galaxu");
+               if (nameUnsigned.contains("ultra"))
+                   keywords.add("s25u s24u s23u ultra u");
+               if (nameUnsigned.contains("fold"))
+                   keywords.add("zfold fold gap");
+               if (nameUnsigned.contains("flip"))
+                   keywords.add("zflip flip gap");
+               if (nameUnsigned.contains("fe"))
+                   keywords.add("fan edition");
+               if (nameUnsigned.contains("galaxy a"))
+                   keywords.add(nameUnsigned.replace("galaxy a", "a"));
+               break;
+
+           case "oppo":
+               keywords.add("opo son tung");
+               if (nameUnsigned.contains("reno"))
+                   keywords.add("r" + nameUnsigned.replaceAll("[^0-9]", ""));
+               if (nameUnsigned.contains("find"))
+                   keywords.add("fin");
+               break;
+
+           case "xiaomi":
+               keywords.add("mi xiao mi my");
+               if (nameUnsigned.contains("redmi"))
+                   keywords.add("remi redmi");
+               if (nameUnsigned.contains("note"))
+                   keywords.add("not");
+               if (nameUnsigned.contains("poco"))
+                   keywords.add("poco phone");
+               break;
+
+           case "realme":
+               keywords.add("real me riu mi");
+               break;
+           case "vivo":
+               keywords.add("bi bo");
+               break;
+           case "honor":
+               keywords.add("honour ho no");
+               break;
+           case "tecno":
+               keywords.add("techno tekno");
+               break;
+
+           case "redmagic":
+           case "zte nubia":
+               keywords.add("gaming game choi game may game nubia");
+               break;
+
+           case "nokia":
+           case "mobell":
+           case "masstel":
+           case "itel":
+           case "inoi":
+           case "benco":
+               if (product.getDisplayPrice() != null
+                       && product.getDisplayPrice().compareTo(new BigDecimal(1500000)) < 0) {
+                   keywords.add("cuc gach phim bam nguoi gia loa to");
+               }
+               break;
+
+           case "viettel":
+               keywords.add("vt sim song");
+               break;
+       }
+
+       // PHÂN KHÚC GIÁ
+       if (product.getDisplayPrice() != null) {
+           double price = product.getDisplayPrice().doubleValue();
+           if (price < 3000000) {
+               keywords.add("gia re sinh vien phu huynh");
+           } else if (price > 20000000) {
+               keywords.add("cao cap flagship xin sang chanh");
+           } else if (price >= 3000000 && price <= 7000000) {
+               keywords.add("tam trung");
+           }
+       }
+
+       return String.join(" ", keywords).toLowerCase().trim();
+   }
 
     // BATCH JOB - CẬP NHẬT KEYWORD HÀNG LOẠT
 

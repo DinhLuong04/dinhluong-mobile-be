@@ -28,4 +28,17 @@ public interface DashboardProjections {
 
         Long getMethodCount();
     }
+
+    interface CancellationProjection {
+        String getReason();
+        Long getCount();
+    }
+
+    // Cho hiệu suất kinh doanh
+    interface PerformanceProjection {
+        Long getTotalOrders();
+        Long getCompletedCount();
+        Long getReturnedCount();
+        BigDecimal getLostRevenue();
+    }
 }

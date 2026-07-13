@@ -10,6 +10,8 @@ public class ProductDetailResponse {
     private Long id;
     private String name;
     private String slug;
+    private String categoryName;
+    private String brandName;
     private BigDecimal price;
     private BigDecimal originalPrice;
     private String discountNote;

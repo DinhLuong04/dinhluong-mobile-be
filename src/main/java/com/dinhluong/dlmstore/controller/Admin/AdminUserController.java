@@ -1,6 +1,7 @@
 package com.dinhluong.dlmstore.controller.Admin;
 
 import com.dinhluong.dlmstore.dto.ApiResponse;
+import com.dinhluong.dlmstore.dto.responses.ImportUserReport;
 import com.dinhluong.dlmstore.dto.responses.UserDashboardStats;
 import com.dinhluong.dlmstore.dto.responses.UserDetailResponse;
 import com.dinhluong.dlmstore.dto.responses.UserResponse;
@@ -80,23 +81,24 @@ public class AdminUserController {
                 .body(new InputStreamResource(in));
     }
 
-    @PostMapping(value = "/import", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
-    public ResponseEntity<ApiResponse<String>> importUsersExcel(@RequestParam("file") MultipartFile file) {
-        
-        // Kiểm tra định dạng file tại Controller để tránh xử lý thừa
-        if (file.isEmpty() || !file.getOriginalFilename().endsWith(".xlsx")) {
-            return ResponseEntity.badRequest()
-                    .body(ApiResponse.error(400, "Vui lòng chọn file Excel đúng định dạng (.xlsx)"));
-        }
-
+    @PostMapping("/import")
+    public ResponseEntity<ApiResponse<ImportUserReport>> importUsersExcel(@RequestParam("file") MultipartFile file) {
         try {
-            // Gọi logic xử lý chính trong Service
-            String resultMsg = userImportService.importFromExcel(file);
-            return ResponseEntity.ok(ApiResponse.success(resultMsg, null));
+            // Kiểm tra file rỗng trước khi đẩy xuống Service
+            if (file.isEmpty()) {
+                return ResponseEntity.badRequest().body(ApiResponse.error(400, "File tải lên không được để trống"));
+            }
+
+            // Gọi Service để xử lý Import và lấy báo cáo
+            ImportUserReport report = userImportService.importFromExcel(file);
+
+            // Tùy chỉnh câu thông báo dựa trên kết quả
+            String message = "Xử lý file hoàn tất. Thành công: " + report.getSuccessCount() + ", Thất bại: " + report.getFailCount();
+
+            return ResponseEntity.ok(ApiResponse.success(message, report));
+
         } catch (Exception e) {
-            // Trả về lỗi nếu quá trình đọc/ghi database gặp vấn đề
-            return ResponseEntity.badRequest()
-                    .body(ApiResponse.error(400, "Lỗi khi nhập dữ liệu: " + e.getMessage()));
+            return ResponseEntity.badRequest().body(ApiResponse.error(400, "Lỗi khi import: " + e.getMessage()));
         }
     }
 }

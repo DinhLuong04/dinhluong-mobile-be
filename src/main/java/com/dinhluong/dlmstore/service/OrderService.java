@@ -6,6 +6,7 @@ import com.dinhluong.dlmstore.dto.responses.OrderItemResponse;
 import com.dinhluong.dlmstore.dto.responses.OrderResponse;
 import com.dinhluong.dlmstore.dto.responses.OrderStatsResponse;
 import com.dinhluong.dlmstore.dto.requests.PlaceOrderItemRequest;
+import com.dinhluong.dlmstore.entity.Enums.ProductStatus;
 import com.dinhluong.dlmstore.entity.Order;
 import com.dinhluong.dlmstore.entity.Order.OrderStatus;
 import com.dinhluong.dlmstore.entity.OrderItem;
@@ -14,6 +15,7 @@ import com.dinhluong.dlmstore.entity.Product;
 import com.dinhluong.dlmstore.entity.ProductVariant;
 import com.dinhluong.dlmstore.entity.UserVoucher;
 import com.dinhluong.dlmstore.entity.Voucher;
+import com.dinhluong.dlmstore.exception.ValidationException;
 import com.dinhluong.dlmstore.repository.CartItemRepository;
 import com.dinhluong.dlmstore.repository.CartRepository;
 import com.dinhluong.dlmstore.repository.OrderItemRepository;
@@ -99,17 +101,29 @@ public class OrderService {
 
         for (PlaceOrderItemRequest itemDTO : request.getItems()) {
 
+
             if (itemDTO.getVariantId() == null) {
-
                 throw new RuntimeException("Lỗi: variantId không được để trống!");
-
             }
 
+            // 1. Tìm Variant
             ProductVariant mainVariant = productVariantRepository.findById(itemDTO.getVariantId())
+                    .orElseThrow(() -> new RuntimeException("Sản phẩm không tồn tại hoặc vừa mới ngừng kinh doanh!"));
 
-                    .orElseThrow(() -> new RuntimeException(
+            // 2. 🔥 KIỂM TRA SẢN PHẨM CHA (PRODUCT) TRƯỚC KHI TRUY CẬP
+            Product parentProduct = mainVariant.getProduct();
 
-                            "Không tìm thấy sản phẩm variant có ID: " + itemDTO.getVariantId()));
+            if (parentProduct == null) {
+                // Không được gọi parentProduct.getName() ở đây vì nó đang null
+                throw new RuntimeException(
+                        "Một sản phẩm trong đơn hàng của bạn vừa ngừng kinh doanh."
+                );
+            }
+
+            // 3. (Tùy chọn) Kiểm tra trạng thái ẩn/hiện
+            if (parentProduct.getStatus() != ProductStatus.ACTIVE) {
+                throw new ValidationException("Sản phẩm [" + parentProduct.getName() + "] hiện đang tạm ngưng bán!");
+            }
             
             // 🔥 1. CHỐT CHẶN: TRỪ KHO SẢN PHẨM CHÍNH NGAY LÚC TẠO ĐƠN (Sẽ trigger Optimistic Locking nếu có tranh chấp)
             decreaseStock(mainVariant.getId(), itemDTO.getQuantity(), "Sản phẩm " + mainVariant.getProduct().getName());
@@ -147,7 +161,12 @@ public class OrderService {
                     .productVariantId(mainVariant.getId())
                     .quantity(itemDTO.getQuantity())
                     .priceAtPurchase(mainVariant.getPrice())
+                    .slug(mainVariant.getProduct().getSlug())
                     .comboItems(comboDetails)
+                    .productName(mainVariant.getProduct().getName()) // Chụp tên
+                    .productImage(mainVariant.getProduct().getThumbnailUrl()) // Chụp ảnh
+                    .variantName(String.format("%s - %s - %s", mainVariant.getRom(), mainVariant.getRam(), mainVariant.getColorName())
+                            .replace("null - ", "").replace(" - null", ""))
                     .build();
             orderItemRepository.save(mainItem);
         }
@@ -333,22 +352,21 @@ public class OrderService {
 
         // Map items sang DTO
         List<OrderItemResponse> itemResponses = orderItems.stream().map(item -> {
-            ProductVariant variant = productVariantRepository.findById(item.getProductVariantId()).orElse(null);
+            // Kiểm tra xem sản phẩm còn kinh doanh không (Soft Delete sẽ trả về false)
+            boolean available = productVariantRepository.existsAndActive(item.getProductVariantId());
 
-            String productName = (variant != null && variant.getProduct() != null) ? variant.getProduct().getName()
-                    : "Sản phẩm không xác định";
-            String slug = (variant != null && variant.getProduct() != null) ? variant.getProduct().getSlug() : "";
-            String imageUrl = (variant != null && variant.getProduct() != null) ? variant.getProduct().getThumbnailUrl()
-                    : "";
-            String variantName = (variant != null)
-                    ? String.format("%s - %s - %s", variant.getRom(), variant.getRam(), variant.getColorName())
-                    : "";
-
-            return OrderItemResponse.builder().id(item.getId()).productVariantId(item.getProductVariantId())
-                    .productName(productName).imageUrl(imageUrl)
-                    .variantName(variantName.replace("null - ", "").replace(" - null", "")).quantity(item.getQuantity())
-                    .slug(slug)
-                    .priceAtPurchase(item.getPriceAtPurchase()).comboItems(item.getComboItems()).build();
+            return OrderItemResponse.builder()
+                    .id(item.getId())
+                    .productVariantId(item.getProductVariantId())
+                    .productName(item.getProductName() != null ? item.getProductName() : "Sản phẩm không xác định")
+                    .imageUrl(item.getProductImage() != null ? item.getProductImage() : "")
+                    .variantName(item.getVariantName() != null ? item.getVariantName() : "")
+                    .quantity(item.getQuantity())
+                    .priceAtPurchase(item.getPriceAtPurchase())
+                    .slug(item.getSlug()) // 🔥 TRẢ LẠI SLUG THẬT, KHÔNG ÉP RỖNG NỮA
+                    .isAvailable(available) // 🔥 THÊM TRƯỜNG NÀY (Nhớ cập nhật DTO)
+                    .comboItems(item.getComboItems())
+                    .build();
         }).toList();
 
         // 🔥 Lấy thông tin thanh toán
@@ -377,16 +395,12 @@ public class OrderService {
         // 🔥 LẤY DANH SÁCH SẢN PHẨM (ĐỂ FRONTEND CÓ SLUG ĐIỀU HƯỚNG)
         List<OrderItem> orderItems = orderItemRepository.findByOrderId(order.getId());
         List<OrderItemResponse> itemResponses = orderItems.stream().map(item -> {
-            ProductVariant variant = productVariantRepository.findById(item.getProductVariantId()).orElse(null);
-
-            String productName = (variant != null && variant.getProduct() != null) ? variant.getProduct().getName()
-                    : "Sản phẩm không xác định";
-            String slug = (variant != null && variant.getProduct() != null) ? variant.getProduct().getSlug() : "";
-
+            boolean available = productVariantRepository.existsAndActive(item.getProductVariantId());
             return OrderItemResponse.builder()
                     .id(item.getId())
-                    .productName(productName)
-                    .slug(slug) // 🔥 LẤY SLUG RA ĐÂY
+                    .productName(item.getProductName() != null ? item.getProductName() : "Sản phẩm không xác định")
+                    .slug(item.getSlug()) // 🔥 TRẢ LẠI SLUG THẬT
+                    .isAvailable(available)
                     .build();
         }).toList();
 
@@ -435,22 +449,16 @@ public class OrderService {
 
             // Lấy chi tiết Item
             List<OrderItem> orderItems = orderItemRepository.findByOrderId(order.getId());
-            List<OrderItemResponse> itemResponses = orderItems.stream().map(item -> {
-                ProductVariant variant = productVariantRepository.findById(item.getProductVariantId()).orElse(null);
-                String productName = (variant != null && variant.getProduct() != null) ? variant.getProduct().getName()
-                        : "Sản phẩm không xác định";
-                String imageUrl = (variant != null && variant.getProduct() != null)
-                        ? variant.getProduct().getThumbnailUrl()
-                        : "";
-                String variantName = (variant != null)
-                        ? String.format("%s - %s - %s", variant.getRom(), variant.getRam(), variant.getColorName())
-                        : "";
-
-                return OrderItemResponse.builder().id(item.getId()).productVariantId(item.getProductVariantId())
-                        .productName(productName).variantName(variantName.replace("null - ", "").replace(" - null", ""))
-                        .imageUrl(imageUrl).quantity(item.getQuantity()).priceAtPurchase(item.getPriceAtPurchase())
-                        .comboItems(item.getComboItems()).build();
-            }).toList();
+            List<OrderItemResponse> itemResponses = orderItems.stream().map(item -> OrderItemResponse.builder()
+                    .id(item.getId())
+                    .productVariantId(item.getProductVariantId())
+                    .productName(item.getProductName() != null ? item.getProductName() : "Sản phẩm không xác định")
+                    .variantName(item.getVariantName() != null ? item.getVariantName() : "")
+                    .imageUrl(item.getProductImage() != null ? item.getProductImage() : "")
+                    .quantity(item.getQuantity())
+                    .priceAtPurchase(item.getPriceAtPurchase())
+                    .comboItems(item.getComboItems())
+                    .build()).toList();
 
             return OrderResponse.builder().id(order.getId()).totalAmount(order.getTotalAmount())
                     .status(order.getStatus()).createdAt(order.getCreatedAt()).receiverName(order.getReceiverName())
@@ -484,8 +492,10 @@ public class OrderService {
         // 2. Lấy danh sách sản phẩm trong đơn hàng
         List<OrderItem> items = orderItemRepository.findByOrderId(orderId);
 
-        
 
+        String vnStatus = translateStatus(newStatus);
+        // Bước 1: Khởi tạo tin nhắn cơ bản từ hàm helper
+        String message = generateNotificationMessage(newStatus, orderId, vnStatus, actionBy, reason);
         // ==============================================================
         // KỊCH BẢN B: HỦY ĐƠN HOẶC HOÀN HÀNG -> CỘNG LẠI KHO
         // ==============================================================
@@ -506,6 +516,24 @@ public class OrderService {
                         }
                     }
                 }
+               // --- Kiểm tra tiền đã thu chưa để báo khách ---
+               Payment payment = paymentRepository.findByOrderId(orderId).orElse(null);
+               String refundGuide = "";
+
+               if (payment != null && "PAID".equals(payment.getStatus().name())) {
+                   // Chuyển sang REFUND_PENDING để Admin dễ lọc danh sách nợ tiền
+                   payment.setStatus(Payment.PaymentStatus.REFUND_PENDING);
+                   paymentRepository.save(payment);
+
+                   message += " Vì đơn đã thanh toán, anh/chị vui lòng liên hệ Chat/Hotline để nhận lại tiền hoàn ạ.";
+               }
+
+               // 3. Ghi lý do và người hủy
+               order.setReason(reason);
+               order.setCancelledBy(actionBy);
+
+
+
             }
         }
 
@@ -547,10 +575,6 @@ public class OrderService {
         // 🔥 GÁN XONG XUÔI HẾT RỒI MỚI LƯU (SAVE)
         Order updatedOrder = orderRepository.save(order);
         // 4. 🔥 TẠO VÀ GỬI THÔNG BÁO CHO USER (Đã FIX lỗi truyền tham số)
-        String vnStatus = translateStatus(newStatus);
-
-        // Truyền đầy đủ 4 tham số, bao gồm cả 'actionBy'
-        String message = generateNotificationMessage(newStatus, orderId, vnStatus, actionBy, reason);
 
         // Nếu có message thì mới gửi
         if (message != null && !message.isEmpty()) {

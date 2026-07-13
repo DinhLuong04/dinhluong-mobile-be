@@ -5,8 +5,10 @@ import com.dinhluong.dlmstore.dto.responses.BrandResponse;
 import com.dinhluong.dlmstore.dto.responses.CategoryResponse;
 import com.dinhluong.dlmstore.entity.Brand;
 import com.dinhluong.dlmstore.entity.Category;
+import com.dinhluong.dlmstore.exception.DataConstraintException;
 import com.dinhluong.dlmstore.repository.BrandRepository;
 import com.dinhluong.dlmstore.repository.CategoryRepository;
+import com.dinhluong.dlmstore.repository.ProductRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -20,7 +22,7 @@ public class MasterDataService {
 
     private final CategoryRepository categoryRepository;
     private final BrandRepository brandRepository;
-
+    private final ProductRepository productRepository;
     // ================= CATEGORY =================
 
     public List<CategoryResponse> getAllCategories() {
@@ -55,6 +57,9 @@ public class MasterDataService {
 
     @Transactional
     public void deleteCategory(Long id) {
+        if (productRepository.existsByCategoryId(id)) {
+            throw new DataConstraintException("Không thể xóa! Danh mục này đang chứa sản phẩm.");
+        }
         categoryRepository.deleteById(id);
     }
 
@@ -98,6 +103,10 @@ public class MasterDataService {
 
     @Transactional
     public void deleteBrand(Long id) {
+
+        if (productRepository.existsByBrandId(id)) {
+            throw new DataConstraintException("Không thể xóa! Hãng này đang có sản phẩm.");
+        }
         brandRepository.deleteById(id);
     }
 

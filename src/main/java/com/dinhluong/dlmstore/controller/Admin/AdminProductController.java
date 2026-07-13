@@ -3,19 +3,25 @@ package com.dinhluong.dlmstore.controller.Admin;
 import com.dinhluong.dlmstore.dto.ApiResponse;
 import com.dinhluong.dlmstore.dto.requests.BulkStockUpdateRequest;
 import com.dinhluong.dlmstore.dto.requests.ProductRequest;
+import com.dinhluong.dlmstore.dto.responses.ImportReportResponse;
 import com.dinhluong.dlmstore.dto.responses.ProductResponse;
 import com.dinhluong.dlmstore.entity.Product;
 import com.dinhluong.dlmstore.entity.Enums.ProductStatus;
 import com.dinhluong.dlmstore.entity.Enums.ProductType;
 import com.dinhluong.dlmstore.service.AdminProductService;
+import com.dinhluong.dlmstore.service.ExcelImportService;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 import lombok.RequiredArgsConstructor;
 
+import java.io.ByteArrayInputStream;
 import java.util.List;
+
+import org.springframework.core.io.InputStreamResource;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -27,7 +33,26 @@ import org.springframework.web.multipart.MultipartFile;
 public class AdminProductController {
 
     private final AdminProductService adminProductService;
+    private final ExcelImportService<ImportReportResponse> excelImportService;
+    @GetMapping("/export")
+public ResponseEntity<InputStreamResource> exportProducts(
+        @RequestParam(required = false) ProductType productType,
+        @RequestParam(required = false) String keyword,
+        @RequestParam(required = false) ProductStatus status,
+        @RequestParam(required = false) Long brandId,
+        @RequestParam(required = false) Long categoryId) {
 
+    ByteArrayInputStream in = adminProductService.exportProductsToExcel(productType, keyword, status, brandId, categoryId);
+
+    HttpHeaders headers = new HttpHeaders();
+    headers.add("Content-Disposition", "attachment; filename=DLM_Products_Export_" + System.currentTimeMillis() + ".xlsx");
+
+    return ResponseEntity
+            .ok()
+            .headers(headers)
+            .contentType(MediaType.parseMediaType("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"))
+            .body(new InputStreamResource(in));
+}
     @GetMapping
     public ResponseEntity<?> getProducts(
             @RequestParam(required = false) ProductType productType,
@@ -121,7 +146,11 @@ public class AdminProductController {
 
         }
     }
-
+    // Trong AdminProductController
+@GetMapping("/overview-stats")
+public ResponseEntity<?> getOverviewStats() {
+    return ResponseEntity.ok(adminProductService.getOverviewStats());
+}
     // BẬT / TẮT NỔI BẬT
     @PutMapping("/{id}/toggle-featured")
     public ResponseEntity<?> toggleFeatured(@PathVariable Long id) {
@@ -155,4 +184,13 @@ public class AdminProductController {
         }
     }
 
+    @PostMapping(value = "/import", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    public ResponseEntity<?> importProductsExcel(@RequestParam("file") MultipartFile file) {
+        try {
+            ImportReportResponse report = excelImportService.importFromExcel(file);
+            return ResponseEntity.ok(ApiResponse.success(report.getMessage(), report));
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(ApiResponse.error(400, e.getMessage()));
+        }
+    }
 }

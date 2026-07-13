@@ -17,4 +17,5 @@ public class OrderItemResponse {
     private Integer quantity;
     private BigDecimal priceAtPurchase;
     private List<ComboItemDetail> comboItems;
+    private boolean isAvailable;
 }

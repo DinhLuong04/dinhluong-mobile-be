@@ -26,4 +26,17 @@ public class AdminPaymentController {
 
         return ResponseEntity.ok(ApiResponse.success("Lấy danh sách giao dịch thành công", payments));
     }
+
+    // ==========================================
+    // 🔥 THÊM API XÁC NHẬN ĐÃ HOÀN TIỀN
+    // ==========================================
+    @PutMapping("/{id}/refunded")
+    public ResponseEntity<ApiResponse<String>> confirmRefund(@PathVariable Long id) {
+
+        // Gọi logic xử lý từ Service (Cập nhật trạng thái + Gửi Noti)
+        paymentService.confirmRefund(id);
+
+        // Trả về response theo chuẩn ApiResponse hiện có của bạn
+        return ResponseEntity.ok(ApiResponse.success("Cập nhật trạng thái hoàn tiền thành công", null));
+    }
 }

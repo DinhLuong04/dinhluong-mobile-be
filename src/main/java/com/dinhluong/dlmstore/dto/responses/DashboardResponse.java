@@ -16,6 +16,8 @@ public class DashboardResponse {
     private List<TopBrand> topBrands;
     private List<ActiveVoucher> activeVouchers;
     private SupportStats supportStats;
+    private List<CancellationStat> cancellationStats; // PHẢI THÊM DÒNG NÀY
+    private BusinessPerformance performance;
 
     @Data
     @Builder
@@ -25,7 +27,13 @@ public class DashboardResponse {
         private Long newUsers;
         private Long pendingTasks;
     }
-
+    @Data
+    @Builder
+    public static class BusinessPerformance {
+        private double conversionRate;
+        private double returnRate;
+        private BigDecimal lostRevenue;
+    }
     @Data
     @Builder
     public static class RevenueTrend {
@@ -86,5 +94,12 @@ public class DashboardResponse {
         private Long chatbotHandled;
         private Long humanHandled;
         private Double avgRating;
+    }
+
+    @Data
+    @Builder
+    public static class CancellationStat {
+        private String reason;
+        private Long count;
     }
 }

@@ -2,9 +2,11 @@ package com.dinhluong.dlmstore.service;
 
 import com.dinhluong.dlmstore.dto.requests.AdminReplyRequest;
 import com.dinhluong.dlmstore.dto.responses.AdminCommentResponse;
+import com.dinhluong.dlmstore.entity.Product;
 import com.dinhluong.dlmstore.entity.ProductComment;
 import com.dinhluong.dlmstore.entity.ProductCommentImage;
 import com.dinhluong.dlmstore.repository.ProductCommentRepository;
+import com.dinhluong.dlmstore.repository.ProductRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -21,7 +23,7 @@ import java.util.stream.Collectors;
 public class AdminReviewService {
 
     private final ProductCommentRepository productCommentRepository;
-
+    private final ProductRepository productRepository;
     @Transactional(readOnly = true)
     public Page<AdminCommentResponse> getAdminReviews(String keyword, ProductComment.CommentStatus status, Pageable pageable) {
         Page<ProductComment> parentComments = productCommentRepository.searchAdminComments(keyword, status, pageable);
@@ -84,10 +86,13 @@ public class AdminReviewService {
         List<AdminCommentResponse> replyResponses = replies.stream()
                 .map(reply -> mapToResponse(reply, new ArrayList<>()))
                 .collect(Collectors.toList());
-
+        Product product = productRepository.findById(comment.getProductId()).orElse(null);
         return AdminCommentResponse.builder()
                 .id(comment.getId())
                 .productId(comment.getProductId())
+                .productName(product != null ? product.getName() : "Sản phẩm không tồn tại")
+                .productThumbnail(product != null ? product.getThumbnailUrl() : null)
+                .productSlug(product != null ? product.getSlug() : null)
                 .userId(comment.getUserId())
                 .authorName(comment.getAuthorName())
                 .authorPhone(comment.getAuthorPhone())

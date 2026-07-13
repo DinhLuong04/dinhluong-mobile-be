@@ -1,9 +1,11 @@
 package com.dinhluong.dlmstore.entity;
 
 import java.math.BigDecimal;
-import com.dinhluong.dlmstore.entity.imp.BaseEntity;
+
 import jakarta.persistence.*;
 import lombok.*;
+import org.hibernate.annotations.NotFound;
+import org.hibernate.annotations.NotFoundAction;
 
 @Entity
 @Table(name = "product_variants")
@@ -15,6 +17,7 @@ public class ProductVariant {
     private Long id;
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "product_id")
+    @NotFound(action = NotFoundAction.IGNORE)
     @ToString.Exclude
     private Product product;
     @Column(name = "sku")

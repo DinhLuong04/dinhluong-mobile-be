@@ -1,6 +1,11 @@
 package com.dinhluong.dlmstore.repository;
 
+import com.dinhluong.dlmstore.entity.Enums.OrderStatus;
 import com.dinhluong.dlmstore.entity.Order;
+
+import com.dinhluong.dlmstore.repository.projections.DashboardProjections;
+
+
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
@@ -72,4 +77,34 @@ public interface OrderRepository extends JpaRepository<Order, Long> {
        @Modifying
        @Query("UPDATE Order o SET o.status = :status WHERE o.id IN :ids")
        int updateStatusBatch(@Param("ids") List<Long> ids, @Param("status") Order.OrderStatus status);
+
+       // Query 1: Thống kê lý do hủy đơn
+    @Query("SELECT o.reason AS reason, COUNT(o.id) AS count " +
+           "FROM Order o " +
+           "WHERE o.status = 'CANCELLED' " +
+           "AND o.createdAt BETWEEN :start AND :end " +
+           "AND o.reason IS NOT NULL " +
+           "GROUP BY o.reason ORDER BY count DESC")
+    List<DashboardProjections.CancellationProjection> countByReason(
+            @Param("start") LocalDateTime start, @Param("end") LocalDateTime end);
+
+    // Query 2: Lấy dữ liệu tổng hợp để tính hiệu suất (Performance)
+    @Query("SELECT COUNT(o.id) AS totalOrders, " +
+           "SUM(CASE WHEN o.status = 'DELIVERED' THEN 1 ELSE 0 END) AS completedCount, " +
+           "SUM(CASE WHEN o.status = 'RETURNED' THEN 1 ELSE 0 END) AS returnedCount, " +
+           "SUM(CASE WHEN o.status IN ('CANCELLED', 'RETURNED') THEN o.totalAmount ELSE 0 END) AS lostRevenue " +
+           "FROM Order o " +
+           "WHERE o.createdAt BETWEEN :start AND :end")
+    DashboardProjections.PerformanceProjection getPerformanceData(
+            @Param("start") LocalDateTime start, @Param("end") LocalDateTime end);
+
+       @Query("SELECT DISTINCT o FROM Order o, OrderItem oi, ProductVariant pv " +
+               "WHERE o.id = oi.orderId " +
+               "AND oi.productVariantId = pv.id " +
+               "AND pv.product.id = :productId " +
+               "AND o.status IN (:statuses)")
+       List<Order> findUnfinishedOrdersByProductId(
+               @Param("productId") Long productId,
+               @Param("statuses") List<OrderStatus> statuses
+       );
 }

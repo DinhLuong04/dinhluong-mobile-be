@@ -60,6 +60,14 @@ public class ChatService {
     // THÊM MỚI: Gửi tin nhắn
     @Transactional
     public ChatMessage sendMessage(Long senderId, Long receiverId, String content) {
+        if (content == null || content.trim().isEmpty()) {
+            throw new RuntimeException("Nội dung tin nhắn không được để trống");
+        }
+
+        // Giới hạn độ dài để tránh spam phá hoại DB
+        if (content.length() > 2000) {
+            throw new RuntimeException("Tin nhắn quá dài");
+        }
         ChatMessage message = ChatMessage.builder()
                 .senderId(senderId)
                 .receiverId(receiverId)

@@ -9,10 +9,23 @@ import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.Date;
+import java.util.HashMap;
+import java.util.Map;
 
 @ControllerAdvice
 public class GlobalExceptionHandler {
 
+
+    @ExceptionHandler(RuntimeException.class)
+    public ResponseEntity<?> handleRuntimeException(RuntimeException e) {
+        // Trả về mã 400 để Frontend kích hoạt Modal.error
+        Map<String, Object> body = new HashMap<>();
+        body.put("status", "error");
+        body.put("code", 400);
+        body.put("message", e.getMessage());
+
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(body);
+    }
     @ExceptionHandler({ BadCredentialsException.class, UsernameNotFoundException.class })
     public ResponseEntity<ApiResponse<Object>> handleAuthenticationExceptions(RuntimeException ex) {
         ApiResponse<Object> response = ApiResponse.error(

@@ -11,6 +11,9 @@ public class AdminCommentResponse {
     private Long id;
     private Long productId;
     private Long userId;
+    private String productName;
+    private String productThumbnail;
+    private String productSlug;
     private String authorName;
     private String authorPhone;
     private String authorAvatar;
